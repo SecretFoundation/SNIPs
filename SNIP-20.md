@@ -12,9 +12,14 @@ Contracts that implement this interface SHOULD support only a single token/symbo
 
 Notation in this document conforms to the standards set by [RFC-2119](http://microformats.org/wiki/rfc-2119)
 
+## Terms
+
+- __Message__ - This is an on-chain interface. It is triggered by sending a transaction, and receiving an on-chain response which is read by the client. Messages are authenticated both by the blockchain, and by the secret enclave
+- __Query__ - This is an off-chain interface. Queries are done by returning data that a node has locally, and are not public. Query responses are returned immediately, and do not have to wait for blocks. In addition, queries cannot be authenticated using the standard interfaces. Any contract that wishes to strongly enforce query permissions must implement it themselves. (TBD - should this be standardized?)
+
 ## Padding
 
-Secret-20 tokens may want to enforce constant length messages. To support this functionality, an optional _padding_ field may be sent with ANY of the messages or queries in this spec. Contracts and Clients MUST ignore this field if sent, either in the request or response fields
+Secret-20 tokens may want to enforce constant length messages to avoid leaking data. To support this functionality, an optional _padding_ field may be sent with ANY of the messages in this spec. Contracts and Clients MUST ignore this field if sent, either in the request or response fields
 
 # Sections
 
@@ -40,6 +45,7 @@ Moves tokens from the account that appears in the Cosmos message sender[1] field
 
 ### Send
 Moves amount from the Cosmos message sender[1] account to the recipient account, with the ability to register a receiver interface which will be called _after_ the transfer is completed. Contract MAY be an address of a contract that registered the Receiver interface. Msg is binary encoded data that can be decoded into a contract-specific message by the receiver, which will be passed to the recipient, along with the amount.
+Even if the receiver function fails for any reason, the actual transfer of tokens MUST NOT be reverted.
 
 ##### Request parameters
     recipient - string. Contracts MUST validate that this parameter is in the form of a valid bech32 account address
@@ -54,9 +60,10 @@ MUST remove amount tokens from the balance of Cosmos message sender[1] and MUST 
 
 ### RegisterReceive
 This message is used to tell the Secret-20 contract to call the _Receive_ function of the Cosmos message sender[1] after a successful _send_. 
-Even if the receiver function fails for any reason, the actual transfer of tokens MUST NOT be reverted.
 
 In Secret Network this is used to pair a code hash with the contract address that must be called. This means that the Secret-20 MUST store the sent code_hash and use it when calling the _Receive_ function
+
+TBD - is there any value in allowing an address other than msg.sender? i.e. If I wanted every time someone sends me tokens to trigger some _other_ contract.
 
 ##### Request parameters
 	code_hash - string
@@ -140,45 +147,58 @@ The solution discussed in the Ethereum community was an IncreaseAllowance and De
 Set or increase the allowance such that spender may access up to `current_allowance + amount` tokens from the env.sender account. This may optionally come with an Expiration time, which if set limits when the approval can be used (by time or height).
 
 ##### params
-{spender, amount, expires}
+	spender
+	amount
+	expires
 
 ### DecreaseAllowance
 Decrease or clear the allowance such that spender may access up to `current_allowance - amount` tokens from the env.sender account. This may optionally come with an Expiration time, which if set limits when the approval can be used (by time or height). If amount >= current_allowance, this will clear the allowance (delete it).
 
 ##### params
-{spender, amount, expires}
+	spender
+	amount
+	expires
 
 ### TransferFrom
 This makes use of an allowance and if there was a valid, un-expired pre-approval for the env.sender, then we move amount tokens from owner to recipient and deduct it from the available allowance.
 
 ##### params
-{owner, recipient, amount}
+	owner
+	recipient
+	amount
 
 ### SendFrom
 SendFrom is to Send, what TransferFrom is to Transfer. 
 This allows a pre-approved account to not just transfer the tokens, 
-but to send them to another contract to trigger a given action. 
+but to send them to another address to trigger a given action. 
 Note SendFrom will set the Receive{sender} to be the env.sender 
 (the account that triggered the transfer) rather than the owner account (the account the money is coming from). 
 This is an open question whether we should switch this?
 
 ##### params
-{owner, contract, amount, msg} - 
+	owner
+	recipient
+	amount
+	msg 
 
 ### BurnFrom
 This works like TransferFrom, but burns the tokens instead of transfering them. 
 This will reduce the owner's balance, total_supply and the caller's allowance.
 
 ##### params
-{owner, amount} - 
+	owner
+	amount 
 
 ## Queries
 
 ### Allowance
 This returns the available allowance that spender can access from the owner's account, along with the expiration info
 
+TBD - how to keep this privacy preserving. Can't make this a message, otherwise it won't be useful to contracts. Setting a viewing key in a contract is possible, but that will make TXs that use this query super super expensive and very slow. Right now I feel like we'll have to allow it like this, and recommend that people use the _send_ and _receive_ functions instead 
+
 ##### params
-{owner, spender}
+	owner
+	spender
 
 ##### Response
 AllowanceResponse{balance, expiration}
@@ -216,8 +236,9 @@ The minted amounts MUST match the exchange rate specified by the ExchangeRate qu
 Redeems tokens in exchange for native coins. The redeemed tokens SHOULD be burned, and taken out of the pool
 
 ##### Params
-amount - Uint128. Number of tokens to redeem
-denom - string [optional] - *TBD* If a Secret-20 coin wishes to support multiple coins, this might be used to ask for currency in a specific denom. Though it would require specifying error conditions as well. We might want to remove supporting multiple native coins since it complicates things too much IMO
+	amount - Uint128. Number of tokens to redeem
+
+	denom - string [optional] - *TBD* If a Secret-20 coin wishes to support multiple coins, this might be used to ask for currency in a specific denom. Though it would require specifying error conditions as well. We might want to remove supporting multiple native coins since it complicates things too much IMO
 
 ## Queries
 
