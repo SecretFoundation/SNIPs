@@ -21,6 +21,14 @@ Notation in this document conforms to the standards set by [RFC-2119](http://mic
 
 Secret-20 tokens may want to enforce constant length messages to avoid leaking data. To support this functionality, an optional _padding_ field may be sent with ANY of the messages in this spec. Contracts and Clients MUST ignore this field if sent, either in the request or response fields
 
+## Responses
+
+TBD - Not sure what the Cosmos/Cosmwasm standard here is, but I don't see a reason to deviate from it here
+
+Unless specified otherwise, all message responses will be in key-values under the `log` field of the Cosmos message.
+
+Unless specified otherwise, all query responses will be JSON encoded in the `data` field of the Cosmos query response.
+
 # Sections
 
 # Base
@@ -35,6 +43,7 @@ Moves tokens from the account that appears in the Cosmos message sender[1] field
 ##### Request parameters
 	
 	recipient - string. Contracts MUST validate that this parameter is in the form of a valid bech32 account address
+	
 	amount - Uint128. The amount of tokens to transfer
 
 #### Response
@@ -48,8 +57,10 @@ Moves amount from the Cosmos message sender[1] account to the recipient account,
 Even if the receiver function fails for any reason, the actual transfer of tokens MUST NOT be reverted.
 
 ##### Request parameters
-    recipient - string. Contracts MUST validate that this parameter is in the form of a valid bech32 account address
+    	recipient - string. Contracts MUST validate that this parameter is in the form of a valid bech32 account address
+	
 	amount - Uint128. The amount of tokens to send
+	
 	msg? - 
 
 ### Burn
@@ -79,9 +90,6 @@ The viewing key MUST NOT control any functions which actively affect the balance
 	entropy - string. A user supplied string used for entropy for generation of the viewing key. Secure implementation is left to the client, but it is recommended to use base-64 encoded random bytes and not predictable inputs
 	
 ##### Response
-
-	log:
-	
 	Key: "api_key"
 	Value: Viewing key in the form: `api_key_[a-zA-Z0-9]{24}`
 
@@ -116,6 +124,7 @@ Returns the balance of the given address. Returns "0" if the address is unknown 
 ##### Request parameters
 
 	address - string. Contracts MUST validate that this parameter is in the form of a valid bech32 account address
+	
 	viewing_key - string
 
 
@@ -131,7 +140,9 @@ None
 ### TransferHistory - Authenticated
 
 	address - string. Contracts MUST validate that this parameter is in the form of a valid bech32 account address
+	
 	viewing_key - string
+	
 	n - u32. Number of transactions to show, starting from the latest. I.e. n=1 will return only the latest transaction
 
 # Allowances
@@ -156,7 +167,9 @@ Decrease or clear the allowance such that spender may access up to `current_allo
 
 ##### params
 	spender
+	
 	amount
+	
 	expires
 
 ### TransferFrom
@@ -164,7 +177,9 @@ This makes use of an allowance and if there was a valid, un-expired pre-approval
 
 ##### params
 	owner
+	
 	recipient
+	
 	amount
 
 ### SendFrom
@@ -177,8 +192,11 @@ This is an open question whether we should switch this?
 
 ##### params
 	owner
+	
 	recipient
+	
 	amount
+	
 	msg 
 
 ### BurnFrom
@@ -187,6 +205,7 @@ This will reduce the owner's balance, total_supply and the caller's allowance.
 
 ##### params
 	owner
+	
 	amount 
 
 ## Queries
@@ -198,6 +217,7 @@ TBD - how to keep this privacy preserving. Can't make this a message, otherwise 
 
 ##### params
 	owner
+	
 	spender
 
 ##### Response
