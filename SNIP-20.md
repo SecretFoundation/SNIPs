@@ -1,4 +1,4 @@
-# SNIP-20 Spec: Private, Fungible Tokens
+# WIP - SNIP-20 Spec: Private, Fungible Tokens
 
 SNIP-20, (or Secret-20) is a specification for private fungible tokens based on CosmWasm on the Secret Network. The name and design is loosely based on Ethereum's ERC20 standard, and is a superset of CosmWasm's CW20. The additions to this spec over the CW20 specification are mostly for privacy focused features, and as such will strive to maintain compatability. 
 
