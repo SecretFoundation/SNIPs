@@ -8,6 +8,11 @@ This handles balances and transfers. Note that all amounts are handled as Uint12
 
 Contracts that implement this interface SHOULD support only a single token/symbol, and MUST conform to the standards set in this memo
 
+## Scope
+
+This document aims to set standard interfaces that Secret-20 contract implementors will create, and that both wallet implementors & dependant contract creators will consume.
+For this reason, the focus of this document is to merely give Secret-20 contract implementors the tools needed to create contracts that fully maintain privacy but not to specify implmentation details.
+
 ## Notation
 
 Notation in this document conforms to the standards set by [RFC-2119](http://microformats.org/wiki/rfc-2119)
@@ -16,10 +21,15 @@ Notation in this document conforms to the standards set by [RFC-2119](http://mic
 
 - __Message__ - This is an on-chain interface. It is triggered by sending a transaction, and receiving an on-chain response which is read by the client. Messages are authenticated both by the blockchain, and by the secret enclave
 - __Query__ - This is an off-chain interface. Queries are done by returning data that a node has locally, and are not public. Query responses are returned immediately, and do not have to wait for blocks. In addition, queries cannot be authenticated using the standard interfaces. Any contract that wishes to strongly enforce query permissions must implement it themselves. (TBD - should this be standardized?)
+- __Cosmos Message Sender__ - The account that is found under the `sender` field in a standard Cosmos SDK message. This is also the signer of the message.
 
 ## Padding
 
 Secret-20 tokens may want to enforce constant length messages to avoid leaking data. To support this functionality, an optional _padding_ field may be sent with ANY of the messages in this spec. Contracts and Clients MUST ignore this field if sent, either in the request or response fields
+
+## Requests
+
+Requests are
 
 ## Responses
 
@@ -211,13 +221,6 @@ but to send them to another address to trigger a given action. Note SendFrom wil
 This is an open question whether we should switch this?
 
 ##### params
-	owner
-	
-	recipient
-	
-	amount
-	
-	msg 
 
 |Name         |Type             |Description                                                                                                 | optional |
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
