@@ -78,6 +78,16 @@ Even if the receiver function fails for any reason, the actual transfer of token
 |amount    | string (Uint128)|  The amount of tokens to send                                                                              |          |
 |msg       | string (base64) |                                                                                                            | yes      |
 
+##### Response
+
+```json
+{
+	"send": {
+		"status": "success"
+	}
+}
+```
+
 ### Burn
 MUST remove amount tokens from the balance of Cosmos message sender[1] and MUST reduce the total supply by the same amount. 
 
@@ -85,6 +95,16 @@ MUST remove amount tokens from the balance of Cosmos message sender[1] and MUST 
 |Name      |Type             |Description                                                                                                 | optional |
 |----------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |amount    | string (Uint128)|  The amount of tokens to burn                                                                              |          |
+
+##### Response
+
+```json
+{
+	"burn": {
+		"status": "success"
+	}
+}
+```
 
 ### RegisterReceive
 This message is used to tell the Secret-20 contract to call the _Receive_ function of the Cosmos message sender[1] after a successful _send_. 
@@ -97,6 +117,16 @@ TBD - is there any value in allowing an address other than msg.sender? i.e. If I
 |Name         |Type             |Description                                                                                                 | optional |
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |code_hash    | string          |  A 32-byte hex encoded string, with the code hash of the receiver contract                                 |          |
+
+##### Response
+
+```json
+{
+	"register_receive": {
+		"status": "success"
+	}
+}
+```
 
 ### CreateViewingKey
 This function _generates a new_ viewing key for Cosmos message sender[1], which is used in ALL account specific queries. This key is used to validate the identity of the caller, as in queries in cosmos there is no way to cryptographically authenticate the caller.
@@ -111,8 +141,13 @@ The viewing key MUST NOT control any functions which actively affect the balance
 |entropy      | string          |  A user supplied string used for entropy for generation of the viewing key.<br>Secure implementation is left to the client, but it is recommended to use base-64 encoded random bytes and not predictable inputs                                                                                                                                                            |          |
 	
 ##### Response
-	Key: "api_key"
-	Value: Viewing key in the form: `api_key_[a-zA-Z0-9]{24}`
+```json
+{
+	"create_viewing_key": {
+		"api_key": "<string>"
+	}
+}
+```
 
 ### SetViewingKey
 
@@ -128,6 +163,15 @@ It is NOT RECOMMENDED to use this function to create easy to remember passwords 
 |Name         |Type             |Description                                                                                                 | optional |
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |viewing_key  | string          |  A user supplied string that will be used to authenticate the sender                                       |          |
+
+##### Response
+```json
+{
+	"set_viewing_key": {
+		"api_key": "<string>"
+	}
+}
+```
 
 ## Queries
 
@@ -179,14 +223,26 @@ The solution discussed in the Ethereum community was an IncreaseAllowance and De
 ## Messages
 
 ### IncreaseAllowance
-Set or increase the allowance such that spender may access up to `current_allowance + amount` tokens from the env.sender account. This may optionally come with an Expiration time, which if set limits when the approval can be used (by time).
+Set or increase the allowance such that spender may access up to `current_allowance + amount` tokens from the Cosmos message sender account. This may optionally come with an Expiration time, which if set limits when the approval can be used (by time).
 
-##### params
+##### Request
 |Name         |Type             |Description                                                                                                 | optional |
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |spender      | string          |  A user supplied string that will be used to authenticate the sender                                       |          |
 |amount       | string(Uint128) |  The number of tokens to increase allowance by                                                             |          |
 |expires      | number          |  Time at which the allownace expires.<br>Counts the number of nanoseconds from epoch, 1.1.1970 encoded as uint64                                                    | yes      |
+
+##### Response
+
+```json
+{
+	"increase_allowance": {
+		"spender": "<address>",
+		"owner": "<address>",
+		"allownace": "<current allownace>"
+	}
+}
+```
 
 ### DecreaseAllowance
 Decrease or clear the allowance by a sent amount. This may optionally come with an Expiration time, which if set limits when the approval can be used. If amount is equal or greater than the current allowance, this action MUST set the allowance to zero, and return a success response.
@@ -198,12 +254,23 @@ Decrease or clear the allowance by a sent amount. This may optionally come with 
 |amount       | string(Uint128) |  The number of tokens to decrease allowance by                                                             |          |
 |expires      | number          |  Time at which the allownace expires.<br>Counts the number of nanoseconds from epoch, 1.1.1970 encoded as uint64                                                    | yes      |
 
+##### Response
+
+```json
+{
+	"decrease_allowance": {
+		"spender": "<address>",
+		"owner": "<address>",
+		"allownace": "<current allownace>"
+	}
+}
+```
 
 ### TransferFrom
 
 Transfer an amount of tokens from a specified account, to another specified account. This action MUST fail if the Cosmos message sender[1] does not have an _allowance_ limit that is equal or greater than the amount of tokens sent for the  _owner_ account
 
-##### params
+##### Request
 
 |Name         |Type             |Description                                                                                                 | optional |
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
@@ -211,7 +278,15 @@ Transfer an amount of tokens from a specified account, to another specified acco
 |recipient    | string          |  Account to send tokens __to__                                                                             |          |
 |amount       | string(Uint128) |  Amount of tokens to transfer                                                                              |          |
 
+##### Response
 
+```json
+{
+	"transfer_from": {
+		"status": "success"
+	}
+}
+```
 
 ### SendFrom
 SendFrom is to Send, what TransferFrom is to Transfer. This allows a pre-approved account to not just transfer the tokens, 
@@ -219,7 +294,7 @@ but to send them to another address to trigger a given action. Note SendFrom wil
 (the account that triggered the transfer) rather than the owner account (the account the money is coming from). 
 This is an open question whether we should switch this?
 
-##### params
+##### Request
 
 |Name         |Type             |Description                                                                                                 | optional |
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
@@ -227,6 +302,16 @@ This is an open question whether we should switch this?
 |recipient    | string          |  Account to send tokens __to__                                                                             |          |
 |amount       | string(Uint128) |  Amount of tokens to transfer                                                                              |          |
 |msg          | string(base64)  | Base64 encoded message, which the recipient will receive                                                   | yes      | 
+
+##### Response
+
+```json
+{
+	"send_from": {
+		"status": "success"
+	}
+}
+```
 
 ### BurnFrom
 This works like TransferFrom, but burns the tokens instead of transfering them. 
@@ -238,6 +323,15 @@ This will reduce the owner's balance, total_supply and the caller's allowance.
 |owner        | string          |  Account to take tokens __from__                                                                           |          |
 |amount       | string(Uint128) |  Amount of tokens to burn                                                                                  |          |
 
+##### Response
+
+```json
+{
+	"burn_from": {
+		"status": "success"
+	}
+}
+```
 
 ## Queries
 
@@ -254,7 +348,16 @@ TBD - how to keep this privacy preserving. Can't make this a message, otherwise 
 
 
 ##### Response
-AllowanceResponse{balance, expiration}
+
+```json
+{
+	"allowance": {
+		"spender": "<address>",
+		"owner": "<address>",
+		"allownace": "<current allownace>"
+	}
+}
+```
 
 # Mintable
 This allows another contract to mint new tokens, possibly with a cap. 
@@ -265,17 +368,38 @@ please use a multisig or other contract as the minter address and handle updatin
 ### Mint
 If the Cosmos message sender[1] is an allowed minter, this will create amount new tokens and add them to the balance of recipient.
 
-##### params
+##### Request
 |Name         |Type             |Description                                                                                                 | optional |
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |recipient    | string          |  Account to mint tokens __to__                                                                             |          |
 |amount       | string(Uint128) |  Amount of tokens to mint                                                                                  |          |
+
+##### Response
+
+```json
+{
+	"mint": {
+		"status": "success",
+	}
+}
+```
 
 ## Queries
 ### Minter
 Returns who and how much can be minted. Return type is MinterResponse {minter, cap}. Cap may be unset.
 ##### Params
   None
+
+##### Response
+
+```json
+{
+	"minter": {
+		"minter": "<address>",
+		"limit":  "<amount>"
+	}
+}
+```
 
 # Native
 
@@ -286,8 +410,18 @@ These are a type of Secret-20 coins which are backed by another _native asset_. 
 Deposits a native coin into the contract, which will mint an equivalent amount of tokens to be created. Amount must be sent in the sent_funds field. 
 The minted amounts MUST match the exchange rate specified by the ExchangeRate query. The deposit MUST return an error if any coins that do not match expected demoninations are sent.
 
-##### params
+##### Request
   None
+
+##### Response
+
+```json
+{
+	"deposit": {
+		"status": "success",
+	}
+}
+```
 
 ### Redeem
 Redeems tokens in exchange for native coins. The redeemed tokens SHOULD be burned, and taken out of the pool
@@ -298,6 +432,16 @@ Redeems tokens in exchange for native coins. The redeemed tokens SHOULD be burne
 |amount       | string(Uint128) |  Account to redeem tokens __to__                                                                           |          |
 |denom        | string          |  Denom of tokens to mint. Only used if the contract supports multiple denoms                               | yes      |
 
+##### Response
+
+```json
+{
+	"redeem": {
+		"status": "success",
+	}
+}
+```
+
 ## Queries
 
 ### ExchangeRate
@@ -306,5 +450,16 @@ This query MUST return:
 * exchange rate, in decimal form, the amount of native coins that equal one token.
 * Denomination of native tokens which are acceptable, as a string OR a comma separated value
 
-##### Params
+##### Request
   None
+  
+##### Response
+
+```json
+{
+	"exchange_rate": {
+		"rate": "<decimal>",
+		"denom": "<denom>"
+	}
+}
+```
