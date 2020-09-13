@@ -4,8 +4,6 @@ SNIP-20, (or Secret-20) is a specification for private fungible tokens based on 
 
 The specification is split into multiple sections, a contract may only implement some of this functionality, but must implement the base.
 
-This handles balances and transfers. Note that all amounts are handled as Uint128 (128 bit integers with JSON string representation). Handling decimals is left to the UI and not interpreted
-
 Contracts that implement this interface SHOULD support only a single token/symbol, and MUST conform to the standards set in this memo
 
 ## Scope
@@ -37,6 +35,9 @@ Requests SHOULD be sent as base64 encoded JSON. Future versions of Secret Networ
 Unless specified otherwise, all message & query responses will be JSON encoded in the `data` field of the Cosmos response.
 The reason for this is to make data leakage via message-length side-channels harder. In addition, since all keys will be encrypted, it is not possible to use the `log` events
 for event triggering.
+
+## Balances and amounts
+Note that all amounts are parsed as Uint128 (128 bit integers with JSON string representation). Handling decimals is left to the UI
 
 # Sections
 
