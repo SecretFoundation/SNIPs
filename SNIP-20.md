@@ -29,7 +29,7 @@ Secret-20 tokens may want to enforce constant length messages to avoid leaking d
 
 ## Requests
 
-Requests are
+Requests SHOULD be sent as base64 encoded JSON. Future versions of Secret Network may add support for other formats as well, but at this time we recommend usage of JSON only. For this reason the parameter decriptions specifiy the JSON type which must be used. In addition, request parameters will include in parentheses a CosmWasm (or other) underlying type that this value must conform to. E.g. a recipient address is sent as a string, but must also be parsed to a bech32 address. 
 
 ## Responses
 
@@ -139,8 +139,6 @@ Authentication response MUST be indistinguishable for both the case of a wrong v
 
 ### Balance - Authenticated
 Returns the balance of the given address. Returns "0" if the address is unknown to the contract.
-
-// tbd - specify exact response for viewing key failure?
 
 ##### Request parameters
 
