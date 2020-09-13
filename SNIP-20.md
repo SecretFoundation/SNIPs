@@ -22,6 +22,7 @@ Notation in this document conforms to the standards set by [RFC-2119](http://mic
 - __Message__ - This is an on-chain interface. It is triggered by sending a transaction, and receiving an on-chain response which is read by the client. Messages are authenticated both by the blockchain, and by the secret enclave
 - __Query__ - This is an off-chain interface. Queries are done by returning data that a node has locally, and are not public. Query responses are returned immediately, and do not have to wait for blocks. In addition, queries cannot be authenticated using the standard interfaces. Any contract that wishes to strongly enforce query permissions must implement it themselves. (TBD - should this be standardized?)
 - __Cosmos Message Sender__ - The account that is found under the `sender` field in a standard Cosmos SDK message. This is also the signer of the message.
+- __Native Asset__ - A coin which is defined and managed by the blockchain infrastructure, not a secret contract
 
 ## Padding
 
@@ -278,7 +279,7 @@ Returns who and how much can be minted. Return type is MinterResponse {minter, c
 
 # Native
 
-These are a type of Secret-20 coins which are backed by another _native_ asset. This is useful to create privacy tokens which wrap native assets, such as SCRT, ATOM, etc.
+These are a type of Secret-20 coins which are backed by another _native asset_. This is useful to create privacy tokens which wrap native assets, such as SCRT, ATOM, etc.
 
 ## Messages
 ### Deposit
