@@ -23,11 +23,9 @@ Secret-20 tokens may want to enforce constant length messages to avoid leaking d
 
 ## Responses
 
-TBD - Not sure what the Cosmos/Cosmwasm standard here is, but I don't see a reason to deviate from it here
-
-Unless specified otherwise, all message responses will be in key-values under the `log` field of the Cosmos message.
-
-Unless specified otherwise, all query responses will be JSON encoded in the `data` field of the Cosmos query response.
+Unless specified otherwise, all message & query responses will be JSON encoded in the `data` field of the Cosmos response.
+The reason for this is to make data leakage via message-length side-channels harder. In addition, since all keys will be encrypted, it is not possible to use the `log` events
+for event triggering.
 
 # Sections
 
@@ -38,36 +36,44 @@ Unless specified otherwise, all query responses will be JSON encoded in the `dat
 ### Transfer 
 Moves tokens from the account that appears in the Cosmos message sender[1] field to the account in the recipient field. 
 
-* Variation from CW-20: This command will work when trying to send funds to contract accounts as well.
+* Variation from CW-20: It is NOT required to validate that the recipient is an address and not a contract. This command will work when trying to send funds to contract accounts as well.
 
-##### Request parameters
-	
-	recipient - string. Contracts MUST validate that this parameter is in the form of a valid bech32 account address
-	
-	amount - Uint128. The amount of tokens to transfer
+##### Request
 
-#### Response
-	Will return a positive response if successful, or an error if failed.
+|Name      |Type             |Description                                                                                                 | optional |   |
+|----------|-----------------|------------------------------------------------------------------------------------------------------------|----------|---|
+|recipient | string          |  Accounts SHOULD be a valid bech32 address, but contracts may use a different naming scheme as well        |          |   |
+|amount    | string (Uint128)|  The amount of tokens to transfer                                                                          |          |   |
 
-##### Response parameters
-	None
+##### Response
+
+```json
+{
+	"transfer": {
+		"status": "success"
+	}
+}
+```
 
 ### Send
 Moves amount from the Cosmos message sender[1] account to the recipient account, with the ability to register a receiver interface which will be called _after_ the transfer is completed. Contract MAY be an address of a contract that registered the Receiver interface. Msg is binary encoded data that can be decoded into a contract-specific message by the receiver, which will be passed to the recipient, along with the amount.
 Even if the receiver function fails for any reason, the actual transfer of tokens MUST NOT be reverted.
 
 ##### Request parameters
-    	recipient - string. Contracts MUST validate that this parameter is in the form of a valid bech32 account address
-	
-	amount - Uint128. The amount of tokens to send
-	
-	msg? - 
+
+|Name      |Type             |Description                                                                                                 | optional |
+|----------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|recipient | string          |  Accounts SHOULD be a valid bech32 address, but contracts may use a different naming scheme as well        |          |
+|amount    | string (Uint128)|  The amount of tokens to send                                                                              |          |
+|msg       | string (base64) |                                                                                                            | yes      |
 
 ### Burn
 MUST remove amount tokens from the balance of Cosmos message sender[1] and MUST reduce the total supply by the same amount. 
 
-##### Request parameters
-	amount - Uint128. The amount of tokens to burn
+##### Request
+|Name      |Type             |Description                                                                                                 | optional |
+|----------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|amount    | string (Uint128)|  The amount of tokens to burn                                                                              |          |
 
 ### RegisterReceive
 This message is used to tell the Secret-20 contract to call the _Receive_ function of the Cosmos message sender[1] after a successful _send_. 
@@ -76,8 +82,10 @@ In Secret Network this is used to pair a code hash with the contract address tha
 
 TBD - is there any value in allowing an address other than msg.sender? i.e. If I wanted every time someone sends me tokens to trigger some _other_ contract.
 
-##### Request parameters
-	code_hash - string
+##### Request
+|Name         |Type             |Description                                                                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|code_hash    | string          |  A 32-byte hex encoded string, with the code hash of the receiver contract                                 |          |
 
 ### CreateViewingKey
 This function _generates a new_ viewing key for Cosmos message sender[1], which is used in ALL account specific queries. This key is used to validate the identity of the caller, as in queries in cosmos there is no way to cryptographically authenticate the caller.
@@ -86,8 +94,10 @@ The Viewing Key MUST be stored in such a way that lookup takes a significant amo
 The viewing key MUST NOT control any functions which actively affect the balance of the user.
 	
 ##### Request Parameters
-	
-	entropy - string. A user supplied string used for entropy for generation of the viewing key. Secure implementation is left to the client, but it is recommended to use base-64 encoded random bytes and not predictable inputs
+
+|Name         |Type             |Description                                                                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|entropy      | string          |  A user supplied string used for entropy for generation of the viewing key.<br>Secure implementation is left to the client, but it is recommended to use base-64 encoded random bytes and not predictable inputs                                                                                                                                                            |          |
 	
 ##### Response
 	Key: "api_key"
@@ -103,9 +113,10 @@ If a viewing key is not set, the contract MUST set the provided key as the viewi
 It is NOT RECOMMENDED to use this function to create easy to remember passwords for users, but this is left up to implementors to enforce
 
 ##### Request Parameters
-	
-	viewing_key - string. A user supplied string that will either replace
 
+|Name         |Type             |Description                                                                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|viewing_key  | string          |  A user supplied string that will be used to authenticate the sender                                       |          |
 
 ## Queries
 
@@ -123,9 +134,10 @@ Returns the balance of the given address. Returns "0" if the address is unknown 
 
 ##### Request parameters
 
-	address - string. Contracts MUST validate that this parameter is in the form of a valid bech32 account address
-	
-	viewing_key - string
+|Name         |Type             |Description                                                                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|viewing_key  | string          |  A user supplied string that will be used to authenticate the sender                                       |          |
+| address     | string          |  Addresses SHOULD be a valid bech32 address, but contracts may use a different naming scheme as well       |          |
 
 
 ### TokenInfo - Unauthenticated
@@ -137,13 +149,16 @@ None
 
 ##### Response
 
+`TBD`
+
 ### TransferHistory - Authenticated
 
-	address - string. Contracts MUST validate that this parameter is in the form of a valid bech32 account address
-	
-	viewing_key - string
-	
-	n - u32. Number of transactions to show, starting from the latest. I.e. n=1 will return only the latest transaction
+|Name         |Type             |Description                                                                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|viewing_key  | string          |  A user supplied string that will be used to authenticate the sender                                       |          |
+| address     | string          |  Addresses SHOULD be a valid bech32 address, but contracts may use a different naming scheme as well       |          |
+| n           | number          |Number of transactions to return, starting from the latest. i.e. n=1 will return only the latest transaction|          |
+
 
 # Allowances
 A contract may allow actors to delegate some of their balance to other accounts. This is not as essential as with ERC20 as we use Send/Receive to send tokens to a contract, not Approve/TransferFrom. But it is still a nice use-case, and you can see how the Cosmos SDK wants to add payment allowances to native tokens. This is mainly designed to provide access to other public-key-based accounts.
@@ -155,38 +170,43 @@ The solution discussed in the Ethereum community was an IncreaseAllowance and De
 ## Messages
 
 ### IncreaseAllowance
-Set or increase the allowance such that spender may access up to `current_allowance + amount` tokens from the env.sender account. This may optionally come with an Expiration time, which if set limits when the approval can be used (by time or height).
+Set or increase the allowance such that spender may access up to `current_allowance + amount` tokens from the env.sender account. This may optionally come with an Expiration time, which if set limits when the approval can be used (by time).
 
 ##### params
-	spender
-	amount
-	expires
+|Name         |Type             |Description                                                                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|spender      | string          |  A user supplied string that will be used to authenticate the sender                                       |          |
+|amount       | string(Uint128) |  The number of tokens to increase allowance by                                                             |          |
+|expires      | number          |  Time at which the allownace expires.<br>Counts the number of nanoseconds from epoch, 1.1.1970 encoded as uint64                                                    | yes      |
 
 ### DecreaseAllowance
-Decrease or clear the allowance such that spender may access up to `current_allowance - amount` tokens from the env.sender account. This may optionally come with an Expiration time, which if set limits when the approval can be used (by time or height). If amount >= current_allowance, this will clear the allowance (delete it).
+Decrease or clear the allowance by a sent amount. This may optionally come with an Expiration time, which if set limits when the approval can be used. If amount is equal or greater than the current allowance, this action MUST set the allowance to zero, and return a success response.
 
 ##### params
-	spender
-	
-	amount
-	
-	expires
+|Name         |Type             |Description                                                                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|spender      | string          |  A user supplied string that will be used to authenticate the sender                                       |          |
+|amount       | string(Uint128) |  The number of tokens to decrease allowance by                                                             |          |
+|expires      | number          |  Time at which the allownace expires.<br>Counts the number of nanoseconds from epoch, 1.1.1970 encoded as uint64                                                    | yes      |
+
 
 ### TransferFrom
-This makes use of an allowance and if there was a valid, un-expired pre-approval for the env.sender, then we move amount tokens from owner to recipient and deduct it from the available allowance.
+
+Transfer an amount of tokens from a specified account, to another specified account. This action MUST fail if the Cosmos message sender[1] does not have an _allowance_ limit that is equal or greater than the amount of tokens sent for the  _owner_ account
 
 ##### params
-	owner
-	
-	recipient
-	
-	amount
+
+|Name         |Type             |Description                                                                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|owner        | string          |  Account to take tokens __from__                                                                           |          |
+|recipient    | string          |  Account to send tokens __to__                                                                             |          |
+|amount       | string(Uint128) |  Amount of tokens to transfer                                                                              |          |
+
+
 
 ### SendFrom
-SendFrom is to Send, what TransferFrom is to Transfer. 
-This allows a pre-approved account to not just transfer the tokens, 
-but to send them to another address to trigger a given action. 
-Note SendFrom will set the Receive{sender} to be the env.sender 
+SendFrom is to Send, what TransferFrom is to Transfer. This allows a pre-approved account to not just transfer the tokens, 
+but to send them to another address to trigger a given action. Note SendFrom will set the Receive{sender} to be the env.sender 
 (the account that triggered the transfer) rather than the owner account (the account the money is coming from). 
 This is an open question whether we should switch this?
 
@@ -199,14 +219,23 @@ This is an open question whether we should switch this?
 	
 	msg 
 
+|Name         |Type             |Description                                                                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|owner        | string          |  Account to take tokens __from__                                                                           |          |
+|recipient    | string          |  Account to send tokens __to__                                                                             |          |
+|amount       | string(Uint128) |  Amount of tokens to transfer                                                                              |          |
+|msg          | string(base64)  | Base64 encoded message, which the recipient will receive                                                   | yes      | 
+
 ### BurnFrom
 This works like TransferFrom, but burns the tokens instead of transfering them. 
 This will reduce the owner's balance, total_supply and the caller's allowance.
 
 ##### params
-	owner
-	
-	amount 
+|Name         |Type             |Description                                                                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|owner        | string          |  Account to take tokens __from__                                                                           |          |
+|amount       | string(Uint128) |  Amount of tokens to burn                                                                                  |          |
+
 
 ## Queries
 
@@ -216,9 +245,11 @@ This returns the available allowance that spender can access from the owner's ac
 TBD - how to keep this privacy preserving. Can't make this a message, otherwise it won't be useful to contracts. Setting a viewing key in a contract is possible, but that will make TXs that use this query super super expensive and very slow. Right now I feel like we'll have to allow it like this, and recommend that people use the _send_ and _receive_ functions instead 
 
 ##### params
-	owner
-	
-	spender
+|Name         |Type             |Description                                                                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|owner        | string          |  Account from which tokens are allowed to be taken                                                         |          |
+|spender      | string          |  Account which is allowed to spent tokens on behalf of the _owner_                                         |          |
+
 
 ##### Response
 AllowanceResponse{balance, expiration}
@@ -230,9 +261,13 @@ please use a multisig or other contract as the minter address and handle updatin
 
 ## Messages
 ### Mint
-If the env.sender is the allowed minter, this will create amount new tokens (updating total supply) and add them to the balance of recipient.
+If the Cosmos message sender[1] is an allowed minter, this will create amount new tokens and add them to the balance of recipient.
+
 ##### params
-{recipient, amount}
+|Name         |Type             |Description                                                                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|recipient    | string          |  Account to mint tokens __to__                                                                             |          |
+|amount       | string(Uint128) |  Amount of tokens to mint                                                                                  |          |
 
 ## Queries
 ### Minter
@@ -256,9 +291,10 @@ The minted amounts MUST match the exchange rate specified by the ExchangeRate qu
 Redeems tokens in exchange for native coins. The redeemed tokens SHOULD be burned, and taken out of the pool
 
 ##### Params
-	amount - Uint128. Number of tokens to redeem
-
-	denom - string [optional] - *TBD* If a Secret-20 coin wishes to support multiple coins, this might be used to ask for currency in a specific denom. Though it would require specifying error conditions as well. We might want to remove supporting multiple native coins since it complicates things too much IMO
+|Name         |Type             |Description                                                                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|amount       | string(Uint128) |  Account to redeem tokens __to__                                                                           |          |
+|denom        | string          |  Denom of tokens to mint. Only used if the contract supports multiple denoms                               | yes      |
 
 ## Queries
 
