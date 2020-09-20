@@ -73,7 +73,7 @@ Each SNIP should have the following parts:
 - Specification - The technical specification should describe the syntax and semantics of any new feature or standard.
 - Rationale - The rationale fleshes out the specification by describing what motivated the design and why particular design decisions were made. It should describe alternate designs that were considered and related work, e.g. how the feature is supported in other languages. The rationale may also provide evidence of consensus within the community, and should discuss important objections or concerns raised during discussion.
 - Backwards Compatibility - All SNIPs that introduce backwards incompatibilities must include a section describing these incompatibilities and their severity. The SNIP must explain how the author proposes to deal with these incompatibilities. SNIPs without a sufficient backwards compatibility treatise may be rejected outright.
-- Test Cases - Mandatory for SNIPs that are affecting consensus changes. Other SNIPs can choose to include links to test cases if applicable.
+- Test Cases - Mandatory for SNIPs that are affecting consensus changes. Other SNIPs can links to test cases if applicable.
 - Implementations - Must be completed before any SNIP is given status “Final”, but need not be completed before the SNIP is merged as draft. While there is merit to the approach of reaching consensus on the specification and rationale before writing code, the principle of “rough consensus and running code” is still useful when it comes to resolving many discussions of API details.
 - Security Considerations - All SNIPs must contain a section that discusses the security implications/considerations relevant to the proposed change. Include information that might be important for security discussions, surfaces risks and can be used throughout the life cycle of the proposal. E.g. include security-relevant design decisions, concerns, important discussions, implementation-specific guidance and pitfalls, an outline of threats and risks and how they are being addressed. SNIPs missing the "Security Considerations" section will be rejected. A SNIP cannot proceed to status "Final" without a discussion about Security Considerations that is deemed sufficient by the reviewers.
 - Copyright Waiver - All SNIPs must be in the public domain. See the bottom of this SNIP for an example copyright waiver.
@@ -182,7 +182,9 @@ When referring to an SNIP by number, it should be written in the hyphenated form
 
 ## History
 
-This document was derived from [Ethereum's EIP-1](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1.md), authored by Martin Becze, Hudson Jameson, et al. That document was derived from [Bitcoin's BIP-0001](https://github.com/bitcoin/bips), which in turn was derived from [Python's PEP-0001](https://www.python.org/dev/peps). In many places, text was copied and modified. Please direct all comments to the SNIP editors.
+This document was derived from [Ethereum's EIP-1](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1.md), authored by Martin Becze, Hudson Jameson, et al. That document was derived from [Bitcoin's BIP-0001](https://github.com/bitcoin/bips), which in turn was derived from [Python's PEP-0001](https://www.python.org/dev/peps). In many places, text was copied and modified.
+
+Please direct all comments to the SNIP editors.
 
 ## Copyright
 
