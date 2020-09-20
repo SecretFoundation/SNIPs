@@ -80,7 +80,7 @@ Each SNIP should have the following parts:
 
 ## SNIP Formats and Templates
 
-SNIPs should be written in [markdown] format. Here is a [template](https://github.com/SecretFoundation/SNIPs/blob/master/snip-template.md).
+SNIPs should be written in [markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) format. Here is a [template](https://github.com/SecretFoundation/SNIPs/blob/master/snip-template.md).
 
 ## SNIP Header Preamble
 
@@ -142,7 +142,7 @@ As a single exception, `discussions-to` cannot point to GitHub pull requests.
 
 #### `type` header
 
-The `type` header specifies the type of SNIP: Standards Track, Meta, or Informational. If the track is Standards please include the subcategory (core, networking, interface, or ERC).
+The `type` header specifies the type of SNIP: Standards Track, Meta, or Informational.
 
 #### `category` header
 
@@ -150,7 +150,9 @@ The `category` header specifies the SNIP's category. This is required for standa
 
 #### `created` header
 
-The `created` header records the date that the SNIP was assigned a number. Both headers should be in yyyy-mm-dd format, e.g. 2020-02-13.
+The `created` header records the date that the SNIP was assigned a number
+
+Both headers should be in yyyy-mm-dd format, e.g. 2020-02-13.
 
 #### `updated` header
 
@@ -158,7 +160,7 @@ The `updated` header records the date(s) when the SNIP was updated with "substan
 
 #### `requires` header
 
-SNIPs may have a `requires` header, indicating the SNIP numbers that this SNIP depends on.
+SNIPs may have a `requires` header, indicating the numbers of SNIPs on which this SNIP depends.
 
 #### `superseded-by` and `replaces` headers
 
@@ -166,7 +168,7 @@ SNIPs may also have a `superseded-by` header indicating that a SNIP has been ren
 
 ## Auxiliary Files
 
-Images, diagrams and auxiliary files should be included in a subdirectory of the `assets` folder for that SNIP as follows: `assets/snip-N` (where **N** is to be replaced with the SNIP number). When linking to an image in the SNIP, use relative links such as `../assets/snip-0/image.png`.
+Images, diagrams and auxiliary files should be included in a subdirectory of the `assets` folder for that SNIP as follows: `assets/snip-N` (where **N** is the SNIP number). When linking to an image in the SNIP, use relative links such as `../assets/snip-0/image.png`.
 
 ## Transferring SNIP Ownership
 
