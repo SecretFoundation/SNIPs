@@ -67,7 +67,7 @@ Other exceptional statuses include:
 
 Each SNIP should have the following parts:
 
-- Preamble - RFC 822 style headers containing metadata about the SNIP, including the SNIP number, a short descriptive title (limited to a maximum of 42 characters), and the author details. See [below](https://github.com/SecretFoundation/SNIPs/blob/master/SNIPs/snip-0.md#snip-header-preamble) for details.
+- Preamble - RFC 822 style headers containing metadata about the SNIP, including the SNIP number, a short descriptive title (limited to a maximum of 42 characters), and the author details. See [below](https://github.com/SecretFoundation/SNIPs/blob/master/SNIP-0.md#snip-header-preamble) for details.
 - Abstract - A short (~200 word) description of the technical issue being addressed.
 - Motivation - It should clearly explain the problem solved by the proposal. SNIPs without sufficient motivation may be rejected outright.
 - Specification - The technical specification should describe the syntax and semantics of any new feature or standard.
@@ -80,7 +80,7 @@ Each SNIP should have the following parts:
 
 ## SNIP Formats and Templates
 
-SNIPs should be written in [markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) format. Here is a [template](https://github.com/SecretFoundation/SNIPs/blob/master/snip-template.md).
+SNIPs should be written in [markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) format. Here is a [template](https://github.com/SecretFoundation/SNIPs/blob/master/SNIP-template.md).
 
 ## SNIP Header Preamble
 
