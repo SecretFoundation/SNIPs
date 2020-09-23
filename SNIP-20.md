@@ -207,11 +207,12 @@ None
 
 ### TransferHistory - Authenticated
 
-|Name         |Type             |Description                                                                                                 | optional |
-|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
-|viewing_key  | string          |  A user supplied string that will be used to authenticate the sender                                       |          |
-| address     | string          |  Addresses SHOULD be a valid bech32 address, but contracts may use a different naming scheme as well       |          |
-| n           | number          |Number of transactions to return, starting from the latest. i.e. n=1 will return only the latest transaction|          |
+|Name         |Type             |Description                                                                                                  | optional |
+|-------------|-----------------|-------------------------------------------------------------------------------------------------------------|----------|
+|viewing_key  | string          | A user supplied string that will be used to authenticate the sender                                         |          |
+| address     | string          | Addresses SHOULD be a valid bech32 address, but contracts may use a different naming scheme as well         |          |
+| page_size   | number          | Number of transactions to return, starting from the latest. i.e. n=1 will return only the latest transaction|          |
+| page        | number          | This defaults to 0. Specifying a positive number will skip `page * page_size` txs from the start.          | yes      |
 
 
 # Allowances
