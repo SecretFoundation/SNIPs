@@ -251,13 +251,13 @@ Authentication response MUST be indistinguishable for both the case of a wrong v
 ### Queries
 All queries below that return only public metadata use the same names as their CW721 counterparts in order to maintain universal compatibility.
 
-#### ContractInfo
+### ContractInfo
 Returns top-level metadata about the contract.  Namely, `name` and `symbol`.
 
 ##### Request parameters
 None
 
-#### NftInfo
+### NftInfo
 Returns the public metadata about one particular token.  The return value is based on *ERC-721 Metadata JSON Schema*, but directly from the contract, not as a Uri. Only the image link is a Uri.
 
 ##### Request Parameters
@@ -266,7 +266,7 @@ Returns the public metadata about one particular token.  The return value is bas
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |token_id  | string (Uint128)|  The ID of the token whose metadata should be displayed                                                         |          |
 
-#### AllNftInfo
+### AllNftInfo
 Returns the result of both `NftInfo` and `OwnerOf` as one query as an optimization for clients needing both.
 
 ##### Request Parameters
@@ -275,7 +275,7 @@ Returns the result of both `NftInfo` and `OwnerOf` as one query as an optimizati
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |token_id  | string (Uint128)|  The ID of the token whose owner and metadata should be displayed                                              |          |
 
-#### PrivateNftInfo
+### PrivateNftInfo
 Returns the public and private metadata about one particular token.  The return value is based on *ERC-721 Metadata JSON Schema*, but directly from the contract, not as a Uri. Only the image link is a Uri.
 If the supplied viewing key is not correct, or if the NFT owner has not set a viewing key, the response should be identical to the response of `NftInfo`.
 Authentication MUST be a resource intensive operation, that takes a significant amount of time to compute. This is because such queries are open to offline brute-force attacks, which can be parallelized to scale linearly with the resources of a motivated attacker.  In addition, authentication MUST perform the same computation even if the user does not have a viewing key set. 
