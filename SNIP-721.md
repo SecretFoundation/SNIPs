@@ -49,7 +49,7 @@ This transfers ownership of the token to `recipient` account. This is
 designed to send to an address controlled by a private key and *does not* 
 trigger any actions on the recipient if it is a contract.
 
-Requires `token_id` to point to a valid token, and `env.sender` to be 
+Requires `token_id` to point to a valid token, and `env.message.sender` to be 
 the owner of it, or have an allowance to transfer it. 
 
 ##### Request Parameters
@@ -79,7 +79,7 @@ MUST be an address controlled by a secret contract, which implements
 the Receiver interface. The `msg` will be passed to the recipient 
 contract, along with the token_id.
 
-Requires `token_id` to point to a valid token, and `env.sender` to be 
+Requires `token_id` to point to a valid token, and `env.message.sender` to be 
 the owner of it, or have an allowance to transfer it.
 
 ##### Request Parameters
@@ -104,16 +104,16 @@ the owner of it, or have an allowance to transfer it.
 
 `Approve{spender, token_id, expires}` - Grants permission to `spender` to
 transfer or send the given token. This can only be performed when
-`env.sender` is the owner of the given `token_id` or an `operator`. 
+`env.message.sender` is the owner of the given `token_id` or an `operator`. 
 There can multiple spender accounts per token, and they are cleared once
 the token is transfered or sent.
 
 `Revoke{spender, token_id}` - This revokes a previously granted permission
 to transfer the given `token_id`. This can only be granted when
-`env.sender` is the owner of the given `token_id` or an `operator`.
+`env.message.sender` is the owner of the given `token_id` or an `operator`.
 
 `ApproveAll{operator, expires}` - Grant `operator` permission to transfer or send
-all tokens owned by `env.sender`. This approval is tied to the owner, not the
+all tokens owned by `env.message.sender`. This approval is tied to the owner, not the
 tokens and applies to any future token that the owner receives as well.
 
 `RevokeAll{operator}` - Revoke a previous `ApproveAll` permission granted
@@ -138,7 +138,7 @@ any contract that wishes to manage CW721 tokens. This is generally *not*
 implemented by any CW721 contract.
 
 `ReceiveNft{sender, token_id, msg}` - This is designed to handle `SendNft`
-messages. The address of the contract is stored in `env.sender`
+messages. The address of the contract is stored in `env.message.sender`
 so it cannot be faked. The contract should ensure the sender matches
 the token contract it expects to handle, and not allow arbitrary addresses.
 
@@ -249,17 +249,45 @@ Authentication response MUST be indistinguishable for both the case of a wrong v
 ## Metadata
 
 ### Queries
+All queries below that return only public metadata use the same names as their CW721 counterparts in order to maintain universal compatibility.
 
-`ContractInfo{}` - This returns top-level metadata about the contract.
-Namely, `name` and `symbol`.
+#### ContractInfo
+Returns top-level metadata about the contract.  Namely, `name` and `symbol`.
 
-`NftInfo{token_id}` - This returns metadata about one particular token.
-The return value is based on *ERC-721 Metadata JSON Schema*, but directly
-from the contract, not as a Uri. Only the image link is a Uri.
+##### Request parameters
+None
 
-`AllNftInfo{token_id}` - This returns the result of both `NftInfo`
-and `OwnerOf` as one query as an optimization for clients, which may
-want both info to display one NFT.
+#### NftInfo
+Returns the public metadata about one particular token.  The return value is based on *ERC-721 Metadata JSON Schema*, but directly from the contract, not as a Uri. Only the image link is a Uri.
+
+##### Request Parameters
+
+|Name         |Type             |Description                                                                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|token_id  | string (Uint128)|  The ID of the token whose metadata should be displayed                                                         |          |
+
+#### AllNftInfo
+Returns the result of both `NftInfo` and `OwnerOf` as one query as an optimization for clients needing both.
+
+##### Request Parameters
+
+|Name         |Type             |Description                                                                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|token_id  | string (Uint128)|  The ID of the token whose owner and metadata should be displayed                                              |          |
+
+#### PrivateNftInfo
+Returns the public and private metadata about one particular token.  The return value is based on *ERC-721 Metadata JSON Schema*, but directly from the contract, not as a Uri. Only the image link is a Uri.
+If the supplied viewing key is not correct, or if the NFT owner has not set a viewing key, the response should be identical to the response of `NftInfo`.
+Authentication MUST be a resource intensive operation, that takes a significant amount of time to compute. This is because such queries are open to offline brute-force attacks, which can be parallelized to scale linearly with the resources of a motivated attacker.  In addition, authentication MUST perform the same computation even if the user does not have a viewing key set. 
+
+TBD - Will use cases only require a single key-value pair of "string" type added to the *ERC-721 Metadata JSON Schema* base for the private metadata, or will it need to be an "object" type with multiple key-value pairs?
+
+##### Request Parameters
+
+|Name         |Type             |Description                                                                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+|token_id  | string (Uint128)|  The ID of the token whose metadata should be displayed                                                    |          |
+|viewing_key  | string          | API key used to authenticate access to private metadata                                                        |          |
 
 ## Enumerable
 
