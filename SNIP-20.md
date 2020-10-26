@@ -347,7 +347,7 @@ approval can be used (by time).
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |spender      | string          |  The address of the account getting access to the funds                                                    | no       |
 |amount       | string(Uint128) |  The number of tokens to increase allowance by                                                             | no       |
-|expires      | number          |  Time at which the allowance expires.<br>Counts the number of nanoseconds from epoch, 1.1.1970 encoded as uint64 | yes      |
+|expiration   | number          |  Time at which the allowance expires.<br>Counts the number of nanoseconds from epoch, 1.1.1970 encoded as uint64 | yes      |
 
 ##### Response
 ```json
@@ -371,7 +371,7 @@ allowance to zero, and return a `"success"` response.
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |spender      | string          |  The address of the account getting access to the funds                                                    | no       |
 |amount       | string(Uint128) |  The number of tokens to decrease allowance by                                                             | no       |
-|expires      | number          |  Time at which the allowance expires.<br>Counts the number of nanoseconds from epoch, 1.1.1970 encoded as uint64 | yes      |
+|expiration   | number          |  Time at which the allowance expires.<br>Counts the number of nanoseconds from epoch, 1.1.1970 encoded as uint64 | yes      |
 
 ##### Response
 ```json
@@ -445,6 +445,9 @@ or the spender in the query. In other words, every account's viewing key can
 be used to find out how much allowance the account has given other accounts,
 and how much it has been given by other accounts.
 
+The `expiration` field of the response may be either `null` or unset if no
+expiration has been set.
+
 ##### Request
 |Name         |Type             |Description                                                         | optional |
 |-------------|-----------------|--------------------------------------------------------------------|----------|
@@ -458,7 +461,8 @@ and how much it has been given by other accounts.
   "allowance": {
     "spender": "<address>",
     "owner": "<address>",
-    "allowance": "<current allowance>"
+    "allowance": "<current allowance>",
+    "expiration": 1234
   }
 }
 ```
