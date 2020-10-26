@@ -241,6 +241,15 @@ to the contract.
 | key         | string          |  The viewing key                                                                                           | no       |
 | address     | string          |  Addresses SHOULD be a valid bech32 address, but contracts may use a different naming scheme as well       | no       |
 
+##### Response
+```json
+{
+  "balance": {
+    "amount": "123"
+  }
+}
+```
+
 #### TokenInfo
 This query need not be authenticated.
 
