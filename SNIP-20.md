@@ -439,9 +439,11 @@ This query MUST be authenticated.
 This returns the available allowance that spender can access from the owner's
 account, along with the expiration info.
 
-Both the spender and owner are allowed to make this query, for every pair of
-accounts. i.e. every account can know how much allowance it has given, and
-how much it has been given.
+Every account's viewing key MUST be given permissions to query the allowance
+of any pair of owner and spender, as long as that account is either the owner
+or the spender in the query. In other words, every account's viewing key can
+be used to find out how much allowance the account has given other accounts,
+and how much it has been given by other accounts.
 
 ##### Request
 |Name         |Type             |Description                                                         | optional |
