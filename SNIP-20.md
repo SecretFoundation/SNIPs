@@ -579,7 +579,7 @@ None
 ```json
 {
   "minters": {
-    "minters": ["<address>", "<address>", "<address>"],
+    "minters": ["<address>", "<address>", "<address>"]
   }
 }
 ```
