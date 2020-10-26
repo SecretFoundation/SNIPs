@@ -366,7 +366,7 @@ an expiration time, which if set limits when the approval can be used. If amount
 is equal or greater than the current allowance, this action MUST set the
 allowance to zero, and return a `"success"` response.
 
-##### params
+##### Request
 |Name         |Type             |Description                                                                                                 | optional |
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |spender      | string          |  The address of the account getting access to the funds                                                    | no       |
@@ -410,7 +410,7 @@ the  _owner_ account
 SendFrom is to Send, what TransferFrom is to Transfer. This allows a
 pre-approved account to not just transfer the tokens,
 but to send them to another address to trigger a given action. Note SendFrom
-will set the `Receive{sender}` to be the `env.sender`
+will set the `Receive{sender}` to be the `env.message.sender`
 (the account that triggered the transfer) rather than the owner account (the
 account the money is coming from).
 
@@ -443,11 +443,11 @@ Both the spender and owner are allowed to make this query, for every pair of
 accounts. i.e. every account can know how much allowance it has given, and
 how much it has been given.
 
-##### params
+##### Request
 |Name         |Type             |Description                                                         | optional |
 |-------------|-----------------|--------------------------------------------------------------------|----------|
 |owner        | string          | Account from which tokens are allowed to be taken                  | no       |
-|spender      | string          | Account which is allowed to spent tokens on behalf of the _owner_  | no       |
+|spender      | string          | Account which is allowed to spend tokens on behalf of the _owner_  | no       |
 | key         | string          | The viewing key                                                    | no       |
 
 ##### Response
@@ -546,7 +546,7 @@ This will reduce the owner's balance, total_supply and the caller's allowance.
 This function should be available when a contract supports both the
 [Mintable](#Mintable) and [Allowances](#Allowances) interfaces.
 
-##### params
+##### Request
 |Name         |Type             |Description                       | optional |
 |-------------|-----------------|----------------------------------|----------|
 |owner        | string          |  Account to take tokens __from__ | no       |
@@ -566,7 +566,7 @@ This function should be available when a contract supports both the
 #### Minter (Authenticated)
 Returns the list of minters that have been configured in the contract.
 
-##### Params
+##### Request
 None
 
 ##### Response
@@ -611,7 +611,7 @@ None
 Redeems tokens in exchange for native coins. The redeemed tokens SHOULD be
 burned, and taken out of the pool.
 
-##### Params
+##### Request
 |Name         |Type             |Description                                                                                                 | optional |
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |amount       | string(Uint128) |  Account to redeem tokens __to__                                                                           | no       |
