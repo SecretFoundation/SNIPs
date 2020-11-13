@@ -44,8 +44,8 @@ Notation in this document conforms to the standards set by
 Users may want to enforce constant length messages to avoid leaking
 data. To support this functionality, SNIP-20 tokens MUST support the option to
 include a _padding_ field in every message. This optional _padding_ field may be
-sent with ANY of the messages in this spec. Contracts MUST ignore this field if
-sent.
+sent with ANY of the messages in this spec. Contracts and Clients MUST ignore
+this field if sent, either in the request or response fields
 
 ## Requests
 Requests SHOULD be sent as base64 encoded JSON. Future versions of Secret
