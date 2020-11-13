@@ -41,10 +41,11 @@ Notation in this document conforms to the standards set by
   infrastructure, not a secret contract.
 
 ## Padding
-SNIP-20 tokens may want to enforce constant length messages to avoid leaking
-data. To support this functionality, an optional _padding_ field may be sent
-with ANY of the messages in this spec. Contracts and Clients MUST ignore this
-field if sent, either in the request or response fields
+Users may want to enforce constant length messages to avoid leaking
+data. To support this functionality, SNIP-20 tokens MUST support the option to
+include a _padding_ field in every message. This optional _padding_ field may be
+sent with ANY of the messages in this spec. Contracts MUST ignore this field if
+sent.
 
 ## Requests
 Requests SHOULD be sent as base64 encoded JSON. Future versions of Secret
@@ -112,6 +113,7 @@ contract accounts as well.
 |----------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |recipient | string          |  Accounts SHOULD be a valid bech32 address, but contracts may use a different naming scheme as well        |  no      |
 |amount    | string (Uint128)|  The amount of tokens to transfer                                                                          |  no      |
+|padding   | string          |  Ignored string used to maintain constant-length messages                                                   | yes      |
 
 ##### Response
 ```json
@@ -137,8 +139,9 @@ transaction will be reverted.
 |Name      |Type             |Description                                                                                                 | optional |
 |----------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |recipient | string          |  Accounts SHOULD be a valid bech32 address, but contracts may use a different naming scheme as well        | no       |
-|amount    | string (Uint128)|  The amount of tokens to send                                                                              | no       |
-|msg       | string (base64) |                                                                                                            | yes      |
+|amount    | string (Uint128)|  The amount of tokens to send                                                       | no       |
+|msg       | string (base64) |  Base64 encoded message, which the recipient will receive                                                    | yes      |
+|padding   | string          |  Ignored string used to maintain constant-length messages                                                   | yes      |
 
 ###### Response
 ```json
@@ -161,6 +164,7 @@ and use it when calling the `Receive` function.
 |Name         |Type             |Description                                                                                                 | optional |
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |code_hash    | string          |  A 32-byte hex encoded string, with the code hash of the receiver contract                                 | no       |
+|padding      | string          |  Ignored string used to maintain constant-length messages                                      | yes      |
 
 ##### Response
 ```json
@@ -188,9 +192,10 @@ client, but it is recommended to use base-64 encoded random bytes and not
 predictable inputs.
 
 ##### Request
-|Name         |Type             |Description                       | optional |
-|-------------|-----------------|----------------------------------|----------|
-|entropy      | string          | A source of random information   | no       |
+|Name         |Type             |      Description                                                                                                                                  | optional |
+|-------------|-----------------|------------------------------------------------------------|----------|
+|entropy      | string          | A source of random information                                                 | no       |
+|padding      | string          |  Ignored string used to maintain constant-length messages                                    | yes      |
 
 ##### Response
 ```json
@@ -217,6 +222,7 @@ for users, but this is left up to implementors to enforce.
 |Name         |Type             |Description                                                                                                 | optional |
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 | key         | string          |  A user supplied string that will be used to authenticate the sender                                       | no       |
+|padding      | string          |  Ignored string used to maintain constant-length messages                                      | yes      |
 
 ##### Response
 ```json
@@ -356,7 +362,8 @@ approval can be used (by time).
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |spender      | string          |  The address of the account getting access to the funds                                                    | no       |
 |amount       | string(Uint128) |  The number of tokens to increase allowance by                                                             | no       |
-|expiration   | number          |  Time at which the allowance expires.<br>Counts the number of nanoseconds from epoch, 1.1.1970 encoded as uint64 | yes      |
+|expiration   | number          |  Time at which the allowance expires.<br>Counts the number of seconds from epoch, 1.1.1970 encoded as uint64 | yes      |
+|padding      | string          |  Ignored string used to maintain constant-length messages                                                   | yes      |
 
 ##### Response
 ```json
@@ -380,7 +387,8 @@ allowance to zero, and return a `"success"` response.
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |spender      | string          |  The address of the account getting access to the funds                                                    | no       |
 |amount       | string(Uint128) |  The number of tokens to decrease allowance by                                                             | no       |
-|expiration   | number          |  Time at which the allowance expires.<br>Counts the number of nanoseconds from epoch, 1.1.1970 encoded as uint64 | yes      |
+|expiration   | number          |  Time at which the allowance expires.<br>Counts the number of seconds from epoch, 1.1.1970 encoded as uint64 | yes      |
+|padding      | string          |  Ignored string used to maintain constant-length messages                                                   | yes      |
 
 ##### Response
 ```json
@@ -400,11 +408,12 @@ _allowance_ limit that is equal or greater than the amount of tokens sent for
 the  _owner_ account
 
 ##### Request
-|Name         |Type             |Description                       | optional |
-|-------------|-----------------|----------------------------------|----------|
-|owner        | string          |  Account to take tokens __from__ | no       |
-|recipient    | string          |  Account to send tokens __to__   | no       |
-|amount       | string(Uint128) |  Amount of tokens to transfer    | no       |
+|Name         |Type             |Description                                                  | optional |
+|-------------|-----------------|-------------------------------------------------------------|----------|
+|owner        | string          |  Account to take tokens __from__                                                     | no       |
+|recipient    | string          |  Account to send tokens __to__                                                       | no       |
+|amount       | string(Uint128) |  Amount of tokens to transfer                                                     | no       |
+|padding      | string          |  Ignored string used to maintain constant-length messages                                     | yes      |
 
 ##### Response
 ```json
@@ -430,6 +439,7 @@ account the money is coming from).
 |recipient    | string          | Account to send tokens __to__                            | no       |
 |amount       | string(Uint128) | Amount of tokens to transfer                             | no       |
 |msg          | string(base64)  | Base64 encoded message, which the recipient will receive | yes      |
+|padding      | string          | Ignored string used to maintain constant-length messages          | yes      |
 
 ##### Response
 ```json
@@ -501,10 +511,11 @@ If the Cosmos message sender is an allowed minter, this will create `amount` new
 tokens and add them to the balance of `recipient`.
 
 ##### Request
-|Name         |Type             |Description                     | optional |
-|-------------|-----------------|--------------------------------|----------|
-|recipient    | string          |  Account to mint tokens __to__ | no       |
-|amount       | string(Uint128) |  Amount of tokens to mint      | no       |
+|Name         |Type             |Description                                                 | optional |
+|-------------|-----------------|------------------------------------------------------------|----------|
+|recipient    | string          |  Account to mint tokens __to__                                                      | no       |
+|amount       | string(Uint128) |  Amount of tokens to mint                                                        | no       |
+|padding      | string          |  Ignored string used to maintain constant-length messages                                    | yes      |
 
 ##### Response
 ```json
@@ -524,12 +535,13 @@ in the contract. This completely overrides the previously saved list.
 ##### Request
 |Name         |Type             |Description                                          | optional |
 |-------------|-----------------|-----------------------------------------------------|----------|
-|minters      | list of strings |  List of addresses to set to the list of minters    | no       |
+|minters      | list of strings |  List of addresses to set to the list of minters                      | no       |
+|padding      | string          |  Ignored string used to maintain constant-length messages     | yes      |
 
 ##### Response
 ```json
 {
-  "remove_minters": {
+  "set_minters": {
     "status": "success"
   }
 }
@@ -543,7 +555,8 @@ MUST NOT transfer the funds to another account.
 ##### Request
 |Name      |Type             |Description                                                                                                 | optional |
 |----------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
-|amount    | string (Uint128)|  The amount of tokens to burn                                                                              | no       |
+|amount    | string (Uint128)|  The amount of tokens to burn                       | no       |
+|padding   | string          |  Ignored string used to maintain constant-length messages                   | yes      |
 
 ##### Response
 ```json
@@ -562,10 +575,11 @@ This function should be available when a contract supports both the
 [Mintable](#Mintable) and [Allowances](#Allowances) interfaces.
 
 ##### Request
-|Name         |Type             |Description                       | optional |
-|-------------|-----------------|----------------------------------|----------|
-|owner        | string          |  Account to take tokens __from__ | no       |
-|amount       | string(Uint128) |  Amount of tokens to burn        | no       |
+|Name         |Type             |Description                                                | optional |
+|-------------|-----------------|-----------------------------------------------------------|----------|
+|owner        | string          |  Account to take tokens __from__                                                   | no       |
+|amount       | string(Uint128) |  Amount of tokens to burn                                                       | no       |
+|padding      | string          |  Ignored string used to maintain constant-length messages                                   | yes      |
 
 ##### Response
 ```json
@@ -578,7 +592,7 @@ This function should be available when a contract supports both the
 
 ### Queries
 
-#### Minter (Authenticated)
+#### Minters (Authenticated)
 Returns the list of minters that have been configured in the contract.
 
 ##### Request
@@ -611,7 +625,9 @@ The deposit MUST return an error if any coins that do not match expected
 denominations are sent.
 
 ##### Request
-None
+|Name        |Type             |Description                                          | optional |
+|------------|-----------------|-----------------------------------------------------|----------|
+|padding     | string          |  Ignored string used to maintain constant-length messages                             | yes      |
 
 ##### Response
 ```json
@@ -629,8 +645,9 @@ burned, and taken out of the pool.
 ##### Request
 |Name         |Type             |Description                                                                                                 | optional |
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
-|amount       | string(Uint128) |  Account to redeem tokens __to__                                                                           | no       |
+|amount       | string(Uint128) |  The amount of tokens to redeem __to__                                                                           | no       |
 |denom        | string          |  Denom of tokens to mint. Only used if the contract supports multiple denoms                               | yes      |
+|padding      | string          |  Ignored string used to maintain constant-length messages                                        | yes      |
 
 ##### Response
 ```json
