@@ -113,7 +113,7 @@ contract accounts as well.
 |----------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |recipient | string          |  Accounts SHOULD be a valid bech32 address, but contracts may use a different naming scheme as well        |  no      |
 |amount    | string (Uint128)|  The amount of tokens to transfer                                                                          |  no      |
-|padding   | string          |  Ignored string used to maintain constant-length messages                                                   | yes      |
+|padding   | string          |  Ignored string used to maintain constant-length messages                                                  |  yes     |
 
 ##### Response
 ```json
@@ -139,9 +139,9 @@ transaction will be reverted.
 |Name      |Type             |Description                                                                                                 | optional |
 |----------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |recipient | string          |  Accounts SHOULD be a valid bech32 address, but contracts may use a different naming scheme as well        | no       |
-|amount    | string (Uint128)|  The amount of tokens to send                                                       | no       |
-|msg       | string (base64) |  Base64 encoded message, which the recipient will receive                                                    | yes      |
-|padding   | string          |  Ignored string used to maintain constant-length messages                                                   | yes      |
+|amount    | string (Uint128)|  The amount of tokens to send                                                                              | no       |
+|msg       | string (base64) |  Base64 encoded message, which the recipient will receive                                                  | yes      |
+|padding   | string          |  Ignored string used to maintain constant-length messages                                                  | yes      |
 
 ###### Response
 ```json
@@ -164,7 +164,7 @@ and use it when calling the `Receive` function.
 |Name         |Type             |Description                                                                                                 | optional |
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 |code_hash    | string          |  A 32-byte hex encoded string, with the code hash of the receiver contract                                 | no       |
-|padding      | string          |  Ignored string used to maintain constant-length messages                                      | yes      |
+|padding      | string          |  Ignored string used to maintain constant-length messages                                                  | yes      |
 
 ##### Response
 ```json
@@ -192,10 +192,10 @@ client, but it is recommended to use base-64 encoded random bytes and not
 predictable inputs.
 
 ##### Request
-|Name         |Type             |      Description                                                                                                                                  | optional |
-|-------------|-----------------|------------------------------------------------------------|----------|
-|entropy      | string          | A source of random information                                                 | no       |
-|padding      | string          |  Ignored string used to maintain constant-length messages                                    | yes      |
+|Name         |Type             |Description                                                  | optional |
+|-------------|-----------------|-------------------------------------------------------------|----------|
+|entropy      | string          |  A source of random information                             | no       |
+|padding      | string          |  Ignored string used to maintain constant-length messages   | yes      |
 
 ##### Response
 ```json
@@ -222,7 +222,7 @@ for users, but this is left up to implementors to enforce.
 |Name         |Type             |Description                                                                                                 | optional |
 |-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
 | key         | string          |  A user supplied string that will be used to authenticate the sender                                       | no       |
-|padding      | string          |  Ignored string used to maintain constant-length messages                                      | yes      |
+| padding     | string          |  Ignored string used to maintain constant-length messages                                                  | yes      |
 
 ##### Response
 ```json
@@ -358,12 +358,12 @@ This may optionally come with an expiration time, which if set limits when the
 approval can be used (by time).
 
 ##### Request
-|Name         |Type             |Description                                                                                                 | optional |
-|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
-|spender      | string          |  The address of the account getting access to the funds                                                    | no       |
-|amount       | string(Uint128) |  The number of tokens to increase allowance by                                                             | no       |
+|Name         |Type             |Description                                                                                                   | optional |
+|-------------|-----------------|--------------------------------------------------------------------------------------------------------------|----------|
+|spender      | string          |  The address of the account getting access to the funds                                                      | no       |
+|amount       | string(Uint128) |  The number of tokens to increase allowance by                                                               | no       |
 |expiration   | number          |  Time at which the allowance expires.<br>Counts the number of seconds from epoch, 1.1.1970 encoded as uint64 | yes      |
-|padding      | string          |  Ignored string used to maintain constant-length messages                                                   | yes      |
+|padding      | string          |  Ignored string used to maintain constant-length messages                                                    | yes      |
 
 ##### Response
 ```json
@@ -383,12 +383,12 @@ is equal or greater than the current allowance, this action MUST set the
 allowance to zero, and return a `"success"` response.
 
 ##### Request
-|Name         |Type             |Description                                                                                                 | optional |
-|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
-|spender      | string          |  The address of the account getting access to the funds                                                    | no       |
-|amount       | string(Uint128) |  The number of tokens to decrease allowance by                                                             | no       |
+|Name         |Type             |Description                                                                                                   | optional |
+|-------------|-----------------|--------------------------------------------------------------------------------------------------------------|----------|
+|spender      | string          |  The address of the account getting access to the funds                                                      | no       |
+|amount       | string(Uint128) |  The number of tokens to decrease allowance by                                                               | no       |
 |expiration   | number          |  Time at which the allowance expires.<br>Counts the number of seconds from epoch, 1.1.1970 encoded as uint64 | yes      |
-|padding      | string          |  Ignored string used to maintain constant-length messages                                                   | yes      |
+|padding      | string          |  Ignored string used to maintain constant-length messages                                                    | yes      |
 
 ##### Response
 ```json
@@ -410,10 +410,10 @@ the  _owner_ account
 ##### Request
 |Name         |Type             |Description                                                  | optional |
 |-------------|-----------------|-------------------------------------------------------------|----------|
-|owner        | string          |  Account to take tokens __from__                                                     | no       |
-|recipient    | string          |  Account to send tokens __to__                                                       | no       |
-|amount       | string(Uint128) |  Amount of tokens to transfer                                                     | no       |
-|padding      | string          |  Ignored string used to maintain constant-length messages                                     | yes      |
+|owner        | string          |  Account to take tokens __from__                            | no       |
+|recipient    | string          |  Account to send tokens __to__                              | no       |
+|amount       | string(Uint128) |  Amount of tokens to transfer                               | no       |
+|padding      | string          |  Ignored string used to maintain constant-length messages   | yes      |
 
 ##### Response
 ```json
@@ -439,7 +439,7 @@ account the money is coming from).
 |recipient    | string          | Account to send tokens __to__                            | no       |
 |amount       | string(Uint128) | Amount of tokens to transfer                             | no       |
 |msg          | string(base64)  | Base64 encoded message, which the recipient will receive | yes      |
-|padding      | string          | Ignored string used to maintain constant-length messages          | yes      |
+|padding      | string          | Ignored string used to maintain constant-length messages | yes      |
 
 ##### Response
 ```json
@@ -472,7 +472,7 @@ expiration has been set.
 |-------------|-----------------|--------------------------------------------------------------------|----------|
 |owner        | string          | Account from which tokens are allowed to be taken                  | no       |
 |spender      | string          | Account which is allowed to spend tokens on behalf of the _owner_  | no       |
-| key         | string          | The viewing key                                                    | no       |
+|key          | string          | The viewing key                                                    | no       |
 
 ##### Response
 ```json
@@ -513,9 +513,9 @@ tokens and add them to the balance of `recipient`.
 ##### Request
 |Name         |Type             |Description                                                 | optional |
 |-------------|-----------------|------------------------------------------------------------|----------|
-|recipient    | string          |  Account to mint tokens __to__                                                      | no       |
-|amount       | string(Uint128) |  Amount of tokens to mint                                                        | no       |
-|padding      | string          |  Ignored string used to maintain constant-length messages                                    | yes      |
+|recipient    | string          |  Account to mint tokens __to__                             | no       |
+|amount       | string(Uint128) |  Amount of tokens to mint                                  | no       |
+|padding      | string          |  Ignored string used to maintain constant-length messages  | yes      |
 
 ##### Response
 ```json
@@ -533,10 +533,10 @@ The list of addresses in the message will be set to the list of minters
 in the contract. This completely overrides the previously saved list.
 
 ##### Request
-|Name         |Type             |Description                                          | optional |
-|-------------|-----------------|-----------------------------------------------------|----------|
-|minters      | list of strings |  List of addresses to set to the list of minters                      | no       |
-|padding      | string          |  Ignored string used to maintain constant-length messages     | yes      |
+|Name         |Type             |Description                                                  | optional |
+|-------------|-----------------|-------------------------------------------------------------|----------|
+|minters      | list of strings |  List of addresses to set to the list of minters            | no       |
+|padding      | string          |  Ignored string used to maintain constant-length messages   | yes      |
 
 ##### Response
 ```json
@@ -553,10 +553,10 @@ MUST reduce the total supply by the same amount.
 MUST NOT transfer the funds to another account.
 
 ##### Request
-|Name      |Type             |Description                                                                                                 | optional |
-|----------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
-|amount    | string (Uint128)|  The amount of tokens to burn                       | no       |
-|padding   | string          |  Ignored string used to maintain constant-length messages                   | yes      |
+|Name      |Type             |Description                                                 | optional |
+|----------|-----------------|------------------------------------------------------------|----------|
+|amount    | string (Uint128)|  The amount of tokens to burn                              | no       |
+|padding   | string          |  Ignored string used to maintain constant-length messages  | yes      |
 
 ##### Response
 ```json
@@ -577,9 +577,9 @@ This function should be available when a contract supports both the
 ##### Request
 |Name         |Type             |Description                                                | optional |
 |-------------|-----------------|-----------------------------------------------------------|----------|
-|owner        | string          |  Account to take tokens __from__                                                   | no       |
-|amount       | string(Uint128) |  Amount of tokens to burn                                                       | no       |
-|padding      | string          |  Ignored string used to maintain constant-length messages                                   | yes      |
+|owner        | string          |  Account to take tokens __from__                          | no       |
+|amount       | string(Uint128) |  Amount of tokens to burn                                 | no       |
+|padding      | string          |  Ignored string used to maintain constant-length messages | yes      |
 
 ##### Response
 ```json
@@ -625,9 +625,9 @@ The deposit MUST return an error if any coins that do not match expected
 denominations are sent.
 
 ##### Request
-|Name        |Type             |Description                                          | optional |
-|------------|-----------------|-----------------------------------------------------|----------|
-|padding     | string          |  Ignored string used to maintain constant-length messages                             | yes      |
+|Name        |Type             |Description                                                | optional |
+|------------|-----------------|-----------------------------------------------------------|----------|
+|padding     | string          |  Ignored string used to maintain constant-length messages | yes      |
 
 ##### Response
 ```json
@@ -643,11 +643,11 @@ Redeems tokens in exchange for native coins. The redeemed tokens SHOULD be
 burned, and taken out of the pool.
 
 ##### Request
-|Name         |Type             |Description                                                                                                 | optional |
-|-------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
-|amount       | string(Uint128) |  The amount of tokens to redeem __to__                                                                           | no       |
-|denom        | string          |  Denom of tokens to mint. Only used if the contract supports multiple denoms                               | yes      |
-|padding      | string          |  Ignored string used to maintain constant-length messages                                        | yes      |
+|Name         |Type             |Description                                                                     | optional |
+|-------------|-----------------|--------------------------------------------------------------------------------|----------|
+|amount       | string(Uint128) |  The amount of tokens to redeem __to__                                         | no       |
+|denom        | string          |  Denom of tokens to mint. Only used if the contract supports multiple denoms   | yes      |
+|padding      | string          |  Ignored string used to maintain constant-length messages                      | yes      |
 
 ##### Response
 ```json
