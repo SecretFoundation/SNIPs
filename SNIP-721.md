@@ -420,7 +420,7 @@ The ViewerInfo object provides the address and viewing key of the querier.  It i
 | viewing_key | string             | The querying address' viewing key                                                                                     | no       |                  |
 
 ### AllTokens
-AllTokens returns an optionally paginated list of all the token IDs controlled by the contract.  If the contract's token supply is private, the SNIP-721 contract may choose to only allow an authenticated minter's address to perform this query.  When paginating, supply the last token ID received in a response as the `start_after` string of the next query to continue listing where the previous query stopped.
+AllTokens returns an optionally paginated, lexicographically ordered list of all the token IDs controlled by the contract.  If the contract's token supply is private, the SNIP-721 contract may choose to only allow an authenticated minter's address to perform this query.  When paginating, supply the last token ID received in a response as the `start_after` string of the next query to continue listing where the previous query stopped.
 
 ##### Request
 ```
@@ -1344,6 +1344,8 @@ Minters returns the list of addresses that are authorized to mint tokens.  This 
 ## Batch Processing
 These messages are used to process multiple token transactions in a single Cosmos message.  By avoiding the overhead of creating an additional Cosmos message for every token, an application can save 70k-80k gas per additional token processed.  This may be particularly useful in gaming applications where entire decks of "cards" are being processed.
 
+## Messages
+
 ### BatchMintNft
 BatchMintNft mints a list of tokens.
 
@@ -1536,6 +1538,8 @@ The Send object provides a list of tokens to transfer to one recipient address, 
 ## Burning
 These message standards are provided for contracts that may wish to allow burning tokens.
 
+## Messages
+
 ### BurnNft
 BurnNft is used to burn a single token, providing an optional `memo` to include in the burn's transaction history if desired.  The message sender must have permission to burn the token.  Implementation details regarding who is authorized to burn tokens is left to the contract developer.  The [reference implementation](https://github.com/baedrik/snip721-reference-impl) allows only the token owner and anyone else with valid transfer approval to burn this token.
 
@@ -1617,6 +1621,8 @@ The Burn object provides a list of tokens to burn, as well as an optional `memo`
 
 ## Making the Owner and/or Private Metadata Public
 A SNIP-721 contract may wish to allow an owner to make a token's owner and/or its private metadata public.  It may also choose to allow an address to make all their tokens' owner and/or private metadata public.  The [reference implementation](https://github.com/baedrik/snip721-reference-impl) does this using the same convention as [SetWhitelistedApproval](#setwhitelisted).
+
+## Messages
 
 ### <a name="setglobal"></a>SetGlobalApproval
 The owner of a token can use SetGlobalApproval to make ownership and/or private metadata viewable by everyone.  This can be set for a single token or for an owner's entire inventory of tokens by choosing the appropriate [AccessLevel](#accesslevel).  SetGlobalApproval can also be used to revoke any global approval previously granted.
