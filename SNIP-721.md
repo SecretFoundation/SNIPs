@@ -1,5 +1,5 @@
 # SNIP-721: Private, Non-Fungible Tokens
-SNIP-721 is a specification for private non-fungible tokens based on CosmWasm on the Secret Network. The name and design is loosely based on [ERC-721](https://eips.ethereum.org/EIPS/eip-721), and is a superset of CosmWasm's [CW-721](https://github.com/CosmWasm/cosmwasm-plus/blob/master/packages/cw721/README.md). While this specification is CW-721 compliant, because CW-721 is not capable of privacy, a number of the CW-721-compliant functions may not return all the information a CW-721 implementation would.  For example, the [OwnerOf](#ownerof) query must not display the approvals for a token unless the token owner has supplied his address and viewing key.  In order to strive for CW-721 compliance, a number of functions that require authentication use optional parameters that the CW-721 counterpart does not have.  If the optional authentication parameters are not supplied, the responses must only display information that the token owner has made public.
+SNIP-721 is a specification for private non-fungible tokens based on CosmWasm on the Secret Network. The name and design is loosely based on [ERC-721](https://eips.ethereum.org/EIPS/eip-721), and is a superset of CosmWasm's [CW-721](https://github.com/CosmWasm/cosmwasm-plus/blob/master/packages/cw721/README.md). While this specification is CW-721 compliant, because CW-721 is not capable of privacy, a number of the CW-721-compliant functions may not return all the information a CW-721 implementation would.  For example, the [OwnerOf](#ownerof) query must not display the approvals for a token unless the token owner has supplied his address and viewing key.  In order to strive for CW-721 compliance, a number of queries that require authentication use optional parameters that the CW-721 counterpart does not have.  If the optional authentication parameters are not supplied, the responses must only display information that the token owner has made public.
 
 The [SNIP-721 reference implementation](https://github.com/baedrik/snip721-reference-impl) may be used to create SNIP-721-compliant token contracts either as-is or as a base upon which to build additional application-specific functionality.
 
@@ -34,9 +34,9 @@ Authentication must happen on each query that reveals private account-specific i
 Unless otherwise specified, all message & query responses will be JSON encoded in the `data` field of the Cosmos response, rather than in the `logs`.  This is meant to reduce the potential for data-leakage through side-channel attacks. In addition, since all keys will be encrypted, it is not possible to use the `log` events for event triggering.
 
 ### Success status
-Some of the messages detailed in this document contain a `"status"` field.  This field must hold one of two values: `"success"` or `"failure"`.
+Some of the messages detailed in this document contain a `status` field.  This field must hold one of two values: "success" or "failure".
 
-While errors during execution of contract functions should usually result in a proper and detailed error response, The `"failure"` status is reserved for cases where a contract might choose to obfuscate the exact cause of failure, or otherwise indicate that while nothing failed to happen, the operation itself could not be completed for some valid reason.
+While errors during execution of contract functions should usually result in a proper and detailed error response, The "failure" status is reserved for cases where a contract might choose to obfuscate the exact cause of failure, or otherwise indicate that while nothing failed to happen, the operation itself could not be completed for some valid reason.
 
 # Base
 
@@ -58,12 +58,12 @@ TransferNft is used to transfer ownership of the token to the recipient address.
 	}
 }
 ```
-| Name      | Type               | Description                                                                                                                       | Optional | Value If Omitted |
-|-----------|--------------------|-----------------------------------------------------------------------------------------------------------------------------------|----------|------------------|
-| recipient | string (HumanAddr) | Address receiving the token                                                                                                       | no       |                  |
-| token_id  | string             | Identifier of the token to be transferred                                                                                         | no       |                  |
-| memo      | string             | Memo for the transfer transaction that is only viewable by addresses involved in the transfer (recipient, sender, previous owner) | yes      | nothing          |
-| padding   | string             | An ignored string that can be used to maintain constant message length                                                            | yes      | nothing          |
+| Name      | Type               | Description                                                                                                                        | Optional | Value If Omitted |
+|-----------|--------------------|------------------------------------------------------------------------------------------------------------------------------------|----------|------------------|
+| recipient | string (HumanAddr) | Address receiving the token                                                                                                        | no       |                  |
+| token_id  | string             | Identifier of the token to be transferred                                                                                          | no       |                  |
+| memo      | string             | `memo` for the transfer transaction that is only viewable by addresses involved in the transfer (recipient, sender, previous owner)| yes      | nothing          |
+| padding   | string             | An ignored string that can be used to maintain constant message length                                                             | yes      | nothing          |
 
 ##### Response
 ```
@@ -95,8 +95,8 @@ SendNft requires a valid `token_id` and the message sender must either be the ow
 |----------|--------------------------------|----------------------------------------------------------------------------------------------------------------------------|----------|------------------|
 | contract | string (HumanAddr)             | Address receiving the token                                                                                                | no       |                  |
 | token_id | string                         | Identifier of the token to be transferred                                                                                  | no       |                  |
-| msg      | string (base64 encoded Binary) | Msg included when calling the recipient contract's BatchReceiveNft (or ReceiveNft)                                         | yes      | nothing          |
-| memo     | string                         | Memo for the transfer tx that is only viewable by addresses involved in the transfer (recipient, sender, previous owner)   | yes      | nothing          |
+| msg      | string (base64 encoded Binary) | `msg` included when calling the recipient contract's BatchReceiveNft (or ReceiveNft)                                       | yes      | nothing          |
+| memo     | string                         | `memo` for the transfer tx that is only viewable by addresses involved in the transfer (recipient, sender, previous owner) | yes      | nothing          |
 | padding  | string                         | An ignored string that can be used to maintain constant message length                                                     | yes      | nothing          |
 
 ##### Response
@@ -1022,13 +1022,13 @@ The Tx object contains all the information pertaining to a mint, burn, or transf
 	"memo": "optional_memo_for_the_tx"
 }
 ```
-| Name        | Type                              | Description                                                                             | Optional | 
-|-------------|-----------------------------------|-----------------------------------------------------------------------------------------|----------|
-| tx_id       | number (u64)                      | The transaction identifier                                                              | no       |
-| blockheight | number (u64)                      | The number of the block that contains the transaction                                   | no       |
-| token_id    | string                            | The token involved in the transaction                                                   | no       |
-| action      | [TxAction (see below)](#txaction) | The type of transaction and the information specific to that type                       | no       |
-| memo        | string                            | Memo for the transaction that is only viewable by addresses involved in the transaction | yes      |
+| Name        | Type                              | Description                                                                               | Optional | 
+|-------------|-----------------------------------|-------------------------------------------------------------------------------------------|----------|
+| tx_id       | number (u64)                      | The transaction identifier                                                                | no       |
+| blockheight | number (u64)                      | The number of the block that contains the transaction                                     | no       |
+| token_id    | string                            | The token involved in the transaction                                                     | no       |
+| action      | [TxAction (see below)](#txaction) | The type of transaction and the information specific to that type                         | no       |
+| memo        | string                            | `memo` for the transaction that is only viewable by addresses involved in the transaction | yes      |
 
 #### <a name="txaction"></a> TxAction
 The TxAction object defines the type of transaction and holds the information specific to that type.
@@ -1155,7 +1155,7 @@ MintNft mints a single token.
 | owner            | string (HumanAddr)                     | Address of the owner of the minted token                                                      | yes      | env.message.sender   |
 | public_metadata  | [Metadata (see above)](#metadata)      | The metadata that is publicly viewable                                                        | yes      | nothing              |
 | private_metadata | [Metadata (see above)](#metadata)      | The metadata that is viewable only by the token owner and addresses the owner has whitelisted | yes      | nothing              |
-| memo             | string                                 | A memo for the mint tx that is only viewable by addresses involved in the mint (minter, owner)| yes      | nothing              |
+| memo             | string                                 | `memo` for the mint tx that is only viewable by addresses involved in the mint (minter, owner)| yes      | nothing              |
 | padding          | string                                 | An ignored string that can be used to maintain constant message length                        | yes      | nothing              |
 
 ##### Response
@@ -1417,10 +1417,10 @@ Mint defines the data necessary to perform one minting operation
 | owner            | string (HumanAddr)                   | Address of the owner of the minted token                                                           | yes      | env.message.sender   |
 | public_metadata  | [Metadata (see above)](#metadata)    | The metadata that is publicly viewable                                                             | yes      | nothing              |
 | private_metadata | [Metadata (see above)](#metadata)    | The metadata that is viewable only by the token owner and addresses the owner has whitelisted      | yes      | nothing              |
-| memo             | string                               | A memo for the mint tx that is only viewable by addresses involved in the mint (minter, owner)     | yes      | nothing              |
+| memo             | string                               | `memo` for the mint tx that is only viewable by addresses involved in the mint (minter, owner)     | yes      | nothing              |
 
 ### BatchTransferNft
-BatchTransferNft is used to perform multiple token transfers.  The message sender may specify a list of tokens to transfer to one recipient address in each `Transfer` object, and any `memo` provided must be applied to every token transferred in that one `Transfer` object.  The message sender may provide multiple `Transfer` objects to perform transfers to multiple addresses, providing a different memo for each address if desired.  Each individual transfer of a token must show separately in transaction histories.  The message sender must have permission to transfer all the tokens listed (either by being the owner or being granted transfer approval) and every listed `token_id` must be valid.  Any token that is transferred to a new owner must have its single-token approvals cleared.
+BatchTransferNft is used to perform multiple token transfers.  The message sender may specify a list of tokens to transfer to one recipient address in each `Transfer` object, and any `memo` provided must be applied to every token transferred in that one `Transfer` object.  The message sender may provide multiple `Transfer` objects to perform transfers to multiple addresses, providing a different `memo` for each address if desired.  Each individual transfer of a token must show separately in transaction histories.  The message sender must have permission to transfer all the tokens listed (either by being the owner or being granted transfer approval) and every listed `token_id` must be valid.  Any token that is transferred to a new owner must have its single-token approvals cleared.
 
 ##### Request
 ```
@@ -1457,7 +1457,7 @@ BatchTransferNft is used to perform multiple token transfers.  The message sende
 ```
 
 #### <a name="transfer"></a>Transfer
-The Transfer object provides a list of tokens to transfer to one recipient address, as well as an optional memo that would be included with every logged token transfer.
+The Transfer object provides a list of tokens to transfer to one recipient address, as well as an optional `memo` that would be included with every logged token transfer.
 ```
 {
 	"recipient": "address_receiving_the_tokens",
@@ -1467,11 +1467,11 @@ The Transfer object provides a list of tokens to transfer to one recipient addre
 	"memo": "optional_memo_applied_to_the_transfer_tx_for_every_token_listed_in_this_Transfer_object"
 }
 ```
-| Name      | Type               | Description                                                                                                                       | Optional | Value If Omitted |
-|-----------|--------------------|-----------------------------------------------------------------------------------------------------------------------------------|----------|------------------|
-| recipient | string (HumanAddr) | Address receiving the listed tokens                                                                                               | no       |                  |
-| token_ids | array of string    | List of token IDs to transfer to the recipient                                                                                    | no       |                  |
-| memo      | string             | Memo for the transfer transactions that is only viewable by addresses involved in the transfer (recipient, sender, previous owner)| yes      | nothing          |
+| Name      | Type               | Description                                                                                                                         | Optional | Value If Omitted |
+|-----------|--------------------|-------------------------------------------------------------------------------------------------------------------------------------|----------|------------------|
+| recipient | string (HumanAddr) | Address receiving the listed tokens                                                                                                 | no       |                  |
+| token_ids | array of string    | List of token IDs to transfer to the recipient                                                                                      | no       |                  |
+| memo      | string             | `memo` for the transfer transactions that is only viewable by addresses involved in the transfer (recipient, sender, previous owner)| yes      | nothing          |
 
 ### <a name="batchsend"></a>BatchSendNft
 BatchSendNft is used to perform multiple token transfers, and then call the recipient contracts' BatchReceiveNft (or ReceiveNft [see above](#receiver)) if they have registered their receiver interface with the NFT contract.  The message sender may specify a list of tokens to send to one recipient address in each `Send` object, and any `memo` or `msg` provided must be applied to every token transferred in that one `Send` object.  If the list of transferred tokens belonged to multiple previous owners, a separate BatchReceiveNft callback must be performed for each of the previous owners.  If the contract only implements ReceiveNft, one ReceiveNft must be performed for every sent token.  Therefore it is highly recommended to implement BatchReceiveNft if there is the possibility of being sent multiple tokens at one time.  This will significantly reduce gas costs.  
@@ -1515,7 +1515,7 @@ If any BatchReceiveNft (or ReceiveNft) callback fails, the entire transaction mu
 ```
 
 #### <a name="send"></a>Send
-The Send object provides a list of tokens to transfer to one recipient address, as well as an optional memo that would be included with every logged token transfer, and an optional msg that would be included with every BatchReceiveNft or ReceiveNft ([see above](#receiver)) callback made as a result of this Send object.  While Send keeps the `contract` field name in order be consistent with CW-721 specification, Secret Network does not have the same limitations as Cosmos, and it is possible to use BatchSendNft to transfer token ownership to a personal address (not a contract) or to a contract that does not implement any Receiver Interface.
+The Send object provides a list of tokens to transfer to one recipient address, as well as an optional `memo` that would be included with every logged token transfer, and an optional msg that would be included with every BatchReceiveNft or ReceiveNft ([see above](#receiver)) callback made as a result of this Send object.  While Send keeps the `contract` field name in order be consistent with CW-721 specification, Secret Network does not have the same limitations as Cosmos, and it is possible to use BatchSendNft to transfer token ownership to a personal address (not a contract) or to a contract that does not implement any Receiver Interface.
 ```
 {
 	"contract": "address_receiving_the_tokens",
@@ -1526,18 +1526,18 @@ The Send object provides a list of tokens to transfer to one recipient address, 
 	"memo": "optional_memo_applied_to_the_transfer_tx_for_every_token_listed_in_this_Send_object"
 }
 ```
-| Name      | Type                           | Description                                                                                                               | Optional | Value If Omitted |
-|-----------|--------------------------------|---------------------------------------------------------------------------------------------------------------------------|----------|------------------|
-| contract  | string (HumanAddr)             | Address receiving the listed tokens                                                                                       | no       |                  |
-| token_ids | array of string                | List of token IDs to send to the recipient                                                                                | no       |                  |
-| msg       | string (base64 encoded Binary) | Msg included with every BatchReceiveNft (or ReceiveNft) callback performed for this `Send` object                         | yes      | nothing          |
-| memo      | string                         | Memo for the transfer txs that is only viewable by addresses involved in the transfer (recipient, sender, previous owner) | yes      | nothing          |
+| Name      | Type                           | Description                                                                                                                 | Optional | Value If Omitted |
+|-----------|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------|----------|------------------|
+| contract  | string (HumanAddr)             | Address receiving the listed tokens                                                                                         | no       |                  |
+| token_ids | array of string                | List of token IDs to send to the recipient                                                                                  | no       |                  |
+| msg       | string (base64 encoded Binary) | Msg included with every BatchReceiveNft (or ReceiveNft) callback performed for this `Send` object                           | yes      | nothing          |
+| memo      | string                         | `memo` for the transfer txs that is only viewable by addresses involved in the transfer (recipient, sender, previous owner) | yes      | nothing          |
 
 ## Burning
 These message standards are provided for contracts that may wish to allow burning tokens.
 
 ### BurnNft
-BurnNft is used to burn a single token, providing an optional memo to include in the burn's transaction history if desired.  The message sender must have permission to burn the token.  Implementation details regarding who is authorized to burn tokens is left to the contract developer.  The [reference implementation](https://github.com/baedrik/snip721-reference-impl) allows only the token owner and anyone else with valid transfer approval to burn this token.
+BurnNft is used to burn a single token, providing an optional `memo` to include in the burn's transaction history if desired.  The message sender must have permission to burn the token.  Implementation details regarding who is authorized to burn tokens is left to the contract developer.  The [reference implementation](https://github.com/baedrik/snip721-reference-impl) allows only the token owner and anyone else with valid transfer approval to burn this token.
 
 ##### Request
 ```
@@ -1549,11 +1549,11 @@ BurnNft is used to burn a single token, providing an optional memo to include in
 	}
 }
 ```
-| Name      | Type               | Description                                                                                                                       | Optional | Value If Omitted |
-|-----------|--------------------|-----------------------------------------------------------------------------------------------------------------------------------|----------|------------------|
-| token_id  | string             | Identifier of the token to burn                                                                                                   | no       |                  |
-| memo      | string             | Memo for the burn tx that is only viewable by addresses involved in the burn (message sender and previous owner if different)     | yes      | nothing          |
-| padding   | string             | An ignored string that can be used to maintain constant message length                                                            | yes      | nothing          |
+| Name      | Type               | Description                                                                                                                         | Optional | Value If Omitted |
+|-----------|--------------------|-------------------------------------------------------------------------------------------------------------------------------------|----------|------------------|
+| token_id  | string             | Identifier of the token to burn                                                                                                     | no       |                  |
+| memo      | string             | `memo` for the burn tx that is only viewable by addresses involved in the burn (message sender and previous owner if different)     | yes      | nothing          |
+| padding   | string             | An ignored string that can be used to maintain constant message length                                                              | yes      | nothing          |
 
 ##### Response
 ```
@@ -1565,7 +1565,7 @@ BurnNft is used to burn a single token, providing an optional memo to include in
 ```
 
 ### BatchBurnNft
-BatchBurnNft is used to burn multiple tokens.  The message sender may specify a list of tokens to burn in each `Burn` object, and any `memo` provided must be applied to every token burned in that one `Burn` object.  The message sender will usually list every token to be burned in one `Burn` object, but if a different memo is needed for different tokens being burned, multiple `Burn` objects may be listed. Each individual burning of a token must show separately in transaction histories.  The message sender must have permission to burn all the tokens listed.  Implementation details regarding who is authorized to burn tokens is left to the contract developer.  The [reference implementation](https://github.com/baedrik/snip721-reference-impl) allows only the token owner and anyone else with valid transfer approval to burn a token.
+BatchBurnNft is used to burn multiple tokens.  The message sender may specify a list of tokens to burn in each `Burn` object, and any `memo` provided must be applied to every token burned in that one `Burn` object.  The message sender will usually list every token to be burned in one `Burn` object, but if a different `memo` is needed for different tokens being burned, multiple `Burn` objects may be listed. Each individual burning of a token must show separately in transaction histories.  The message sender must have permission to burn all the tokens listed.  Implementation details regarding who is authorized to burn tokens is left to the contract developer.  The [reference implementation](https://github.com/baedrik/snip721-reference-impl) allows only the token owner and anyone else with valid transfer approval to burn a token.
 
 ##### Request
 ```
@@ -1601,7 +1601,7 @@ BatchBurnNft is used to burn multiple tokens.  The message sender may specify a 
 ```
 
 #### <a name="burn"></a>Burn
-The Burn object provides a list of tokens to burn, as well as an optional memo that would be included with every token burn transaction history.
+The Burn object provides a list of tokens to burn, as well as an optional `memo` that would be included with every token burn transaction history.
 ```
 {
 	"token_ids": [
@@ -1610,10 +1610,10 @@ The Burn object provides a list of tokens to burn, as well as an optional memo t
 	"memo": "optional_memo_applied_to_the_burn_tx_for_every_token_listed_in_this_Burn_object"
 }
 ```
-| Name      | Type            | Description                                                                                                                    | Optional | Value If Omitted |
-|-----------|-----------------|--------------------------------------------------------------------------------------------------------------------------------|----------|------------------|
-| token_ids | array of string | List of token IDs to burn                                                                                                      | no       |                  |
-| memo      | string          | Memo for the burn txs that is only viewable by addresses involved in the burn (message sender and previous owner if different) | yes      | nothing          |
+| Name      | Type            | Description                                                                                                                      | Optional | Value If Omitted |
+|-----------|-----------------|----------------------------------------------------------------------------------------------------------------------------------|----------|------------------|
+| token_ids | array of string | List of token IDs to burn                                                                                                        | no       |                  |
+| memo      | string          | `memo` for the burn txs that is only viewable by addresses involved in the burn (message sender and previous owner if different) | yes      | nothing          |
 
 ## Making the Owner and/or Private Metadata Public
 A SNIP-721 contract may wish to allow an owner to make a token's owner and/or its private metadata public.  It may also choose to allow an address to make all their tokens' owner and/or private metadata public.  The [reference implementation](https://github.com/baedrik/snip721-reference-impl) does this using the same convention as [SetWhitelistedApproval](#setwhitelisted).
