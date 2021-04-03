@@ -45,7 +45,7 @@ This handles ownership, transfers, approvals, and metadata. These messages and q
 ## Messages
 
 ### TransferNft
-TransferNft is used to transfer ownership of the token to the recipient address.  This requires a valid `token_id` and the message sender must either be the owner or an address with valid transfer approval.  If the token is transferred to a new owner, its single-token approvals must be cleared.
+TransferNft is used to transfer ownership of the token to the `recipient` address.  This requires a valid `token_id` and the message sender must either be the owner or an address with valid transfer approval.  If the token is transferred to a new owner, its single-token approvals must be cleared.
 
 ##### Request
 ```
@@ -75,7 +75,7 @@ TransferNft is used to transfer ownership of the token to the recipient address.
 ```
 
 ### <a name="sendnft"></a>SendNft
-SendNft is used to transfer ownership of the token to the `contract` address, and then call the recipient's BatchReceiveNft (or ReceiveNft, [see below](#receiver)) if the recipient contract has registered its receiver interface with the NFT contract.  While SendNft keeps the `contract` field name in order to maintain CW-721 compliance, Secret Network does not have the same limitations as Cosmos, and it is possible to use SendNft to transfer token ownership to a personal address (not a contract) or to a contract that does not implement any Receiver Interface.
+SendNft is used to transfer ownership of the token to the `contract` address, and then call the recipient's BatchReceiveNft (or ReceiveNft, [see below](#receiver)) if the recipient contract has registered its receiver interface with the NFT contract.  While SendNft keeps the `contract` field name in order to maintain CW-721 compliance, Secret Network does not have the same limitations as Cosmos, and it is possible to use SendNft to transfer token ownership to a personal address (not a contract) or to a contract that does not implement any [Receiver Interface](#receiver).
 
 SendNft requires a valid `token_id` and the message sender must either be the owner or an address with valid transfer approval.  If the token is transferred to a new owner, its single-token approvals must be cleared.  If the BatchReceiveNft (or ReceiveNft) callback fails, the entire transaction must be reverted (even the transfer must not take place).
 
@@ -1395,7 +1395,7 @@ BatchMintNft mints a list of tokens.
 The IDs of the minted tokens should also be returned in a LogAttribute with the key `minted`.
 
 #### <a name="mint"></a>Mint
-Mint defines the data necessary to perform one minting operation
+The Mint object defines the data necessary to mint one token.
 ```
 {
 	"token_id": "optional_ID_of_new_token",
