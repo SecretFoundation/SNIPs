@@ -1420,7 +1420,7 @@ Mint defines the data necessary to perform one minting operation
 | memo             | string                               | `memo` for the mint tx that is only viewable by addresses involved in the mint (minter, owner)     | yes      | nothing              |
 
 ### BatchTransferNft
-BatchTransferNft is used to perform multiple token transfers.  The message sender may specify a list of tokens to transfer to one recipient address in each `Transfer` object, and any `memo` provided must be applied to every token transferred in that one `Transfer` object.  The message sender may provide multiple `Transfer` objects to perform transfers to multiple addresses, providing a different `memo` for each address if desired.  Each individual transfer of a token must show separately in transaction histories.  The message sender must have permission to transfer all the tokens listed (either by being the owner or being granted transfer approval) and every listed `token_id` must be valid.  Any token that is transferred to a new owner must have its single-token approvals cleared.
+BatchTransferNft is used to perform multiple token transfers.  The message sender may specify a list of tokens to transfer to one `recipient` address in each `Transfer` object, and any `memo` provided must be applied to every token transferred in that one `Transfer` object.  The message sender may provide multiple `Transfer` objects to perform transfers to multiple addresses, providing a different `memo` for each address if desired.  Each individual transfer of a token must show separately in transaction histories.  The message sender must have permission to transfer all the tokens listed (either by being the owner or being granted transfer approval) and every listed `token_id` must be valid.  Any token that is transferred to a new owner must have its single-token approvals cleared.
 
 ##### Request
 ```
@@ -1457,7 +1457,7 @@ BatchTransferNft is used to perform multiple token transfers.  The message sende
 ```
 
 #### <a name="transfer"></a>Transfer
-The Transfer object provides a list of tokens to transfer to one recipient address, as well as an optional `memo` that would be included with every logged token transfer.
+The Transfer object provides a list of tokens to transfer to one `recipient` address, as well as an optional `memo` that would be included with every logged token transfer.
 ```
 {
 	"recipient": "address_receiving_the_tokens",
@@ -1470,11 +1470,11 @@ The Transfer object provides a list of tokens to transfer to one recipient addre
 | Name      | Type               | Description                                                                                                                         | Optional | Value If Omitted |
 |-----------|--------------------|-------------------------------------------------------------------------------------------------------------------------------------|----------|------------------|
 | recipient | string (HumanAddr) | Address receiving the listed tokens                                                                                                 | no       |                  |
-| token_ids | array of string    | List of token IDs to transfer to the recipient                                                                                      | no       |                  |
+| token_ids | array of string    | List of token IDs to transfer to the `recipient`                                                                                    | no       |                  |
 | memo      | string             | `memo` for the transfer transactions that is only viewable by addresses involved in the transfer (recipient, sender, previous owner)| yes      | nothing          |
 
 ### <a name="batchsend"></a>BatchSendNft
-BatchSendNft is used to perform multiple token transfers, and then call the recipient contracts' BatchReceiveNft (or ReceiveNft [see above](#receiver)) if they have registered their receiver interface with the NFT contract.  The message sender may specify a list of tokens to send to one recipient address in each `Send` object, and any `memo` or `msg` provided must be applied to every token transferred in that one `Send` object.  If the list of transferred tokens belonged to multiple previous owners, a separate BatchReceiveNft callback must be performed for each of the previous owners.  If the contract only implements ReceiveNft, one ReceiveNft must be performed for every sent token.  Therefore it is highly recommended to implement BatchReceiveNft if there is the possibility of being sent multiple tokens at one time.  This will significantly reduce gas costs.  
+BatchSendNft is used to perform multiple token transfers, and then call the recipient contracts' [BatchReceiveNft](#batchreceivenft) (or [ReceiveNft](#receivenft)) if they have registered their receiver interface with the NFT contract.  The message sender may specify a list of tokens to send to one recipient address in each `Send` object, and any `memo` or `msg` provided must be applied to every token transferred in that one `Send` object.  If the list of transferred tokens belonged to multiple previous owners, a separate BatchReceiveNft callback must be performed for each of the previous owners.  If the contract only implements ReceiveNft, one ReceiveNft must be performed for every sent token.  Therefore it is highly recommended to implement BatchReceiveNft if there is the possibility of being sent multiple tokens at one time.  This will significantly reduce gas costs.  
 
 The message sender may provide multiple `Send` objects to perform sends to multiple addresses, providing a different `memo` and `msg` for each address if desired.  Each individual transfer of a token must show separately in transaction histories.  The message sender must have permission to transfer all the tokens listed (either by being the owner or being granted transfer approval) and every token ID must be valid.  Any token that is transferred to a new owner must have its single-token approvals cleared.
 If any BatchReceiveNft (or ReceiveNft) callback fails, the entire transaction must be reverted (even the transfers must not take place).
