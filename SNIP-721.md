@@ -74,7 +74,7 @@ TransferNft is used to transfer ownership of the token to the recipient address.
 }
 ```
 
-### SendNft
+### <a name="sendnft"></a>SendNft
 SendNft is used to transfer ownership of the token to the `contract` address, and then call the recipient's BatchReceiveNft (or ReceiveNft, [see below](#receiver)) if the recipient contract has registered its receiver interface with the NFT contract.  While SendNft keeps the `contract` field name in order to maintain CW-721 compliance, Secret Network does not have the same limitations as Cosmos, and it is possible to use SendNft to transfer token ownership to a personal address (not a contract) or to a contract that does not implement any Receiver Interface.
 
 SendNft requires a valid `token_id` and the message sender must either be the owner or an address with valid transfer approval.  If the token is transferred to a new owner, its single-token approvals must be cleared.  If the BatchReceiveNft (or ReceiveNft) callback fails, the entire transaction must be reverted (even the transfer must not take place).
@@ -760,7 +760,7 @@ The Snip721Approval object is used to display all the approvals (and their expir
 |----------------------------------|---------------------------------------|---------------------------------------------------------------------------------------------|----------|
 | address                          | string (HumanAddr)                    | The whitelisted address                                                                     | no       |
 | view_owner_expiration            | [Expiration (see above)](#expiration) | The expiration for view_owner permission.  Can be a blockheight, time, or never             | yes      |
-| view_private_metadata_expiration | [Expiration (see above)](#expiration) | The expiration for view__private_metadata permission.  Can be a blockheight, time, or never | yes      |
+| view_private_metadata_expiration | [Expiration (see above)](#expiration) | The expiration for view_private_metadata permission.  Can be a blockheight, time, or never | yes      |
 | transfer_expiration              | [Expiration (see above)](#expiration) | The expiration for transfer permission.  Can be a blockheight, time, or never               | yes      |
 
 ### TokenApprovals
@@ -1075,7 +1075,7 @@ The TxAction object defines the type of transaction and holds the information sp
 | burner    | string (HumanAddr) | The address that burned the token if different than the previous owner         | yes      |
 
 # <a name="receiver"></a>Receiver Interface
-When the SNIP-721 contract executes [SendNft](#send) and [BatchSendNft](#batchsend) messages, it must perform a callback to the receiving contract's receiver interface if the recipient had registered its code hash using [RegisterReceiveNft](#registerreceive).  BatchReceiveNft is preferred over ReceiveNft, because ReceiveNft does not allow the recipient to know who sent the token, only its previous owner, and ReceiveNft can only process one token.  So it is inefficient when sending multiple tokens to the same contract (a deck of game cards for instance).  ReceiveNft primarily exists just to maintain CW-721 compliance.
+When the SNIP-721 contract executes [SendNft](#sendnft) and [BatchSendNft](#batchsend) messages, it must perform a callback to the receiving contract's receiver interface if the contract had registered its code hash using [RegisterReceiveNft](#registerreceive).  BatchReceiveNft is preferred over ReceiveNft, because ReceiveNft does not allow the recipient to know who sent the token, only its previous owner, and ReceiveNft can only process one token.  So it is inefficient when sending multiple tokens to the same contract (a deck of game cards for instance).  ReceiveNft primarily exists just to maintain CW-721 compliance.
 
 <a name="cwsender"></a>
 Also, it should be noted that the CW-721 `sender` field is inaccurately named, because it is used to hold the address the token came from, not the address that sent it (which is not always the same).  The name is reluctantly kept in ReceiveNft to maintain CW-721 compliance, but BatchReceiveNft uses `sender` to hold the sending address (which matches both its true role and its SNIP-20 Receive counterpart).  Any contract that is implementing both Receiver Interfaces must be sure that the ReceiveNft `sender` field is actually processed like a BatchReceiveNft `from` field.  Again, apologies for any confusion caused by propagating inaccuracies, but because InterNFT is planning on using CW-721 standards, compliance with CW-721 might be necessary.
@@ -1155,7 +1155,7 @@ MintNft mints a single token.
 | owner            | string (HumanAddr)                     | Address of the owner of the minted token                                                      | yes      | env.message.sender   |
 | public_metadata  | [Metadata (see above)](#metadata)      | The metadata that is publicly viewable                                                        | yes      | nothing              |
 | private_metadata | [Metadata (see above)](#metadata)      | The metadata that is viewable only by the token owner and addresses the owner has whitelisted | yes      | nothing              |
-| memo             | string                                 | A memo for the mint tx that is only viewable by addresses involved in the mint (minter/owner) | yes      | nothing              |
+| memo             | string                                 | A memo for the mint tx that is only viewable by addresses involved in the mint (minter, owner)| yes      | nothing              |
 | padding          | string                                 | An ignored string that can be used to maintain constant message length                        | yes      | nothing              |
 
 ##### Response
@@ -1417,7 +1417,7 @@ Mint defines the data necessary to perform one minting operation
 | owner            | string (HumanAddr)                   | Address of the owner of the minted token                                                           | yes      | env.message.sender   |
 | public_metadata  | [Metadata (see above)](#metadata)    | The metadata that is publicly viewable                                                             | yes      | nothing              |
 | private_metadata | [Metadata (see above)](#metadata)    | The metadata that is viewable only by the token owner and addresses the owner has whitelisted      | yes      | nothing              |
-| memo             | string                               | A memo for the mint tx that is only viewable by addresses involved in the mint (minter/owner)      | yes      | nothing              |
+| memo             | string                               | A memo for the mint tx that is only viewable by addresses involved in the mint (minter, owner)     | yes      | nothing              |
 
 ### BatchTransferNft
 BatchTransferNft is used to perform multiple token transfers.  The message sender may specify a list of tokens to transfer to one recipient address in each `Transfer` object, and any `memo` provided must be applied to every token transferred in that one `Transfer` object.  The message sender may provide multiple `Transfer` objects to perform transfers to multiple addresses, providing a different memo for each address if desired.  Each individual transfer of a token must show separately in transaction histories.  The message sender must have permission to transfer all the tokens listed (either by being the owner or being granted transfer approval) and every listed `token_id` must be valid.  Any token that is transferred to a new owner must have its single-token approvals cleared.
@@ -1651,7 +1651,7 @@ The owner of a token can use SetGlobalApproval to make ownership and/or private 
 ```
 
 ## Lootboxes and Wrapped Cards
-The [reference implementation](https://github.com/baedrik/snip721-reference-impl) provides a [configuration setting](https://github.com/baedrik/snip721-reference-impl/blob/master/README.md#config) that prevents anyone, even the owner, from viewing or altering the private metadata of a token until it is unwrapped by calling [Reveal](#reveal).  This enables crating lootboxes or sealed "cards" that have already determined contents instead of randomly determining the contents when they are unwrapped.  If a developer chooses to implement this Seal/Reveal functionality in their own SNIP-721 contract, they may also wish to follow the same message formats.
+The [reference implementation](https://github.com/baedrik/snip721-reference-impl) provides a [configuration setting](https://github.com/baedrik/snip721-reference-impl/blob/master/README.md#config) that prevents anyone, even the owner, from viewing or altering the private metadata of a token until it is unwrapped by calling [Reveal](#reveal).  This enables creating lootboxes or sealed "cards" that have already determined contents instead of randomly determining the contents when they are unwrapped.  If a developer chooses to implement this Seal/Reveal functionality in their own SNIP-721 contract, they may also wish to follow the same message formats.
 
 ## Messages
 
