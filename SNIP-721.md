@@ -951,12 +951,12 @@ TransactionHistory displays an optionally paginated list of transactions (mint, 
 	}
 }
 ```
-| Name        | Type               | Description                                                                                                       | Optional | Value If Omitted                     |
-|-------------|--------------------|-------------------------------------------------------------------------------------------------------------------|----------|--------------------------------------|
-| address     | string (HumanAddr) | The address whose transaction history is being queried                                                            | no       |                                      |
-| viewing_key | string             | The address' viewing key                                                                                          | no       |                                      |
-| page        | number (u32)       | The page number to display, where the first transaction shown skips the page * page_size most recent transactions | yes      | 0                                    |
-| page_size   | number (u32)       | Number of transactions to return                                                                                  | yes      | developer's discretion               |
+| Name        | Type               | Description                                                                                                           | Optional | Value If Omitted       |
+|-------------|--------------------|-----------------------------------------------------------------------------------------------------------------------|----------|------------------------|
+| address     | string (HumanAddr) | The address whose transaction history is being queried                                                                | no       |                        |
+| viewing_key | string             | The address' viewing key                                                                                              | no       |                        |
+| page        | number (u32)       | The page number to display, where the first transaction shown skips the `page` * `page_size` most recent transactions | yes      | 0                      |
+| page_size   | number (u32)       | Number of transactions to return                                                                                      | yes      | developer's discretion |
 
 ##### Response
 ```
@@ -1012,7 +1012,7 @@ TransactionHistory displays an optionally paginated list of transactions (mint, 
 | txs  | array of [Tx (see below)](#tx) | list of transactions in reverse chronological order that involve the specified address | no       |
 
 #### <a name="tx"></a> Tx
-The Tx object contains all the information pertaining to a mint, burn, or transfer transaction.
+The Tx object contains all the information pertaining to a [mint](#txmint), [burn](#txburn), or [transfer](#txxfer) transaction.
 ```
 {
 	"tx_id": 9999,
@@ -1033,7 +1033,7 @@ The Tx object contains all the information pertaining to a mint, burn, or transf
 #### <a name="txaction"></a> TxAction
 The TxAction object defines the type of transaction and holds the information specific to that type.
 
-* TxAction::Mint
+* <a name="txmint"></a>TxAction::Mint
 ```
 {
 	"minter": "address_that_minted_the_token",
@@ -1046,7 +1046,7 @@ The TxAction object defines the type of transaction and holds the information sp
 | minter    | string (HumanAddr) | The address that minted the token                                              | no       |
 | recipient | string (HumanAddr) | The address of the newly minted token's owner                                  | no       |
 
-* TxAction::Transfer
+* <a name="txxfer"></a>TxAction::Transfer
 ```
 {
 	"from": "previous_owner_of_the_token",
@@ -1061,7 +1061,7 @@ The TxAction object defines the type of transaction and holds the information sp
 | sender    | string (HumanAddr) | The address that sent the token if different than the previous owner           | yes      |
 | recipient | string (HumanAddr) | The new owner of the token                                                     | no       |
 
-* TxAction::Burn
+* <a name="txburn"></a>TxAction::Burn
 ```
 {
 	"owner": "previous_owner_of_the_token",
