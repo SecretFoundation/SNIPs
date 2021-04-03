@@ -139,13 +139,13 @@ Approve is used to grant an address permission to transfer a single token.  This
 ```
 
 #### <a name="expiration"></a>Expiration
-Expiration is used to set an expiration for any approvals granted in the message.  Expiration can be set to a specified blockheight, a time in seconds since epoch 01/01/1970, or "never".  Values for blockheight and time are specified as a u64.  If no expiration is given, it must default to "never".
+The Expiration object is used to set an expiration for any approvals granted in the message.  Expiration can be set to a specified blockheight, a time in seconds since epoch 01/01/1970, or "never".  Values for blockheight and time are specified as a u64.  If no expiration is given, it must default to "never".
 
 Also, because the current blockheight and time will not be available to queries until a future hardfork makes that possible, please [see above](#queryblockinfo) regarding an imprecise, and possibly delayed way to enforce expirations on queries in the meantime.  This imprecise method must only be applied when checking an expiration during a query.  When checking an expiration during a message, the blockheight and time are available and exact expiration must be enforced.
 
 * `"never"` - the approval will never expire
 * `{"at_time": 1700000000}` - the approval will expire 1700000000 seconds after 01/01/1970 (time value is u64)
-* `{"at_height": 3000000}` - the approval will expire at block height 3000000 (height value is u64)
+* `{"at_height": 3000000}` - the approval will expire at blockheight 3000000 (height value is u64)
 
 ### Revoke
 Revoke is used to revoke from an address the permission to transfer this single token.  This can only be performed by the token's owner or, in compliance with CW-721, an address that has inventory-wide approval to transfer the owner's tokens (referred to as an operator later). However, one operator may not revoke transfer permission of even one single token away from another operator.  Revoke is provided to maintain compliance with CW-721, but the owner can use [SetWhitelistedApproval](#setwhitelisted) to accomplish the same thing if specifying a `token_id` and `revoke_token` [AccessLevel](#accesslevel) for `transfer`.
@@ -667,7 +667,7 @@ PrivateMetadata returns the private [metadata](#metadata) of a token if the quer
 | image       | string | Private uri to an image or additional metadata                   | yes      |
 
 ### <a name="nftdossier"></a>NftDossier
-NftDossier returns all the information about a token that the viewer is permitted to view.  If no `viewer` is provided, NftDossier must only display the information that has been made public.  The response may include the owner, the public metadata, the private metadata, the reason the private metadata is not viewable, whether ownership is public, whether the private metadata is public, and (if the querier is the owner,) the approvals for this token as well as the inventory-wide approvals for the owner.
+NftDossier returns all the information about a token that the viewer is permitted to view.  If no [viewer](#viewerinfo) is provided, NftDossier must only display the information that has been made public.  The response may include the owner, the public metadata, the private metadata, the reason the private metadata is not viewable, whether ownership is public, whether the private metadata is public, and (if the querier is the owner,) the approvals for this token as well as the inventory-wide approvals for the owner.
 
 ##### Request
 ```
@@ -852,7 +852,7 @@ ApprovedForAll displays all the addresses that have approval to transfer all of 
 | operators | array of [Cw721Approval (see above)](#cw721approval) | List of approvals to transfer all of the owner's tokens  | no       |
 
 ### <a name="inventoryapprovals"></a> InventoryApprovals
-InventoryApprovals returns whether all the address' tokens have public ownership and/or public display of private metadata, and lists all the inventory-wide approvals the address has granted.
+InventoryApprovals returns whether all the address' tokens have public ownership and/or public display of private metadata, and lists all the inventory-wide approvals the address has granted.  Only the viewing key for this specified address should be accepted.
 
 ##### Request
 ```
@@ -901,7 +901,7 @@ InventoryApprovals returns whether all the address' tokens have public ownership
 | inventory_approvals                   | array of [Snip721Approval (see above)](#snipapproval) | List of inventory-wide approvals for this address                                      | no       |
 
 ### Tokens
-Tokens displays an optionally paginated list of all the token IDs that belong to the specified owner.  It must only display the owner's tokens on which the querier has view_owner permission.  If no viewing key is provided, it must only display the owner's tokens that have public ownership.  When paginating, supply the last token ID received in a response as the `start_after` string of the next query to continue listing where the previous query stopped.
+Tokens displays an optionally paginated, lexicographically ordered list of all the token IDs that belong to the specified `owner`.  It must only display the owner's tokens on which the querier has view_owner permission.  If no viewing key is provided, it must only display the owner's tokens that have public ownership.  When paginating, supply the last token ID received in a response as the `start_after` string of the next query to continue listing where the previous query stopped.
 
 ##### Request
 ```
@@ -918,7 +918,7 @@ Tokens displays an optionally paginated list of all the token IDs that belong to
 | Name        | Type               | Description                                                                              | Optional | Value If Omitted       |
 |-------------|--------------------|------------------------------------------------------------------------------------------|----------|------------------------|
 | owner       | string (HumanAddr) | The address whose inventory is being queried                                             | no       |                        |
-| viewer      | string (HumanAddr) | The querier's address if different from the owner                                        | yes      | nothing                |
+| viewer      | string (HumanAddr) | The querier's address if different from the `owner`                                      | yes      | nothing                |
 | viewing_key | string             | The querier's viewing key                                                                | yes      | nothing                |
 | start_after | string             | Results must only list token IDs that come after this string in lexicographical order    | yes      | nothing                |
 | limit       | number (u32)       | Number of token IDs to return                                                            | yes      | developer's discretion |
@@ -1075,12 +1075,12 @@ The TxAction object defines the type of transaction and holds the information sp
 | burner    | string (HumanAddr) | The address that burned the token if different than the previous owner         | yes      |
 
 # <a name="receiver"></a>Receiver Interface
-When the SNIP-721 contract executes [SendNft](#sendnft) and [BatchSendNft](#batchsend) messages, it must perform a callback to the receiving contract's receiver interface if the contract had registered its code hash using [RegisterReceiveNft](#registerreceive).  BatchReceiveNft is preferred over ReceiveNft, because ReceiveNft does not allow the recipient to know who sent the token, only its previous owner, and ReceiveNft can only process one token.  So it is inefficient when sending multiple tokens to the same contract (a deck of game cards for instance).  ReceiveNft primarily exists just to maintain CW-721 compliance.
+When the SNIP-721 contract executes [SendNft](#sendnft) and [BatchSendNft](#batchsend) messages, it must perform a callback to the receiving contract's receiver interface if the contract had registered its code hash using [RegisterReceiveNft](#registerreceive).  [BatchReceiveNft](#batchreceivenft) is preferred over [ReceiveNft](#receivenft), because ReceiveNft does not allow the recipient to know who sent the token, only its previous owner, and ReceiveNft can only process one token.  So it is inefficient when sending multiple tokens to the same contract (a deck of game cards for instance).  ReceiveNft primarily exists just to maintain CW-721 compliance.
 
 <a name="cwsender"></a>
-Also, it should be noted that the CW-721 `sender` field is inaccurately named, because it is used to hold the address the token came from, not the address that sent it (which is not always the same).  The name is reluctantly kept in ReceiveNft to maintain CW-721 compliance, but BatchReceiveNft uses `sender` to hold the sending address (which matches both its true role and its SNIP-20 Receive counterpart).  Any contract that is implementing both Receiver Interfaces must be sure that the ReceiveNft `sender` field is actually processed like a BatchReceiveNft `from` field.  Again, apologies for any confusion caused by propagating inaccuracies, but because InterNFT is planning on using CW-721 standards, compliance with CW-721 might be necessary.
+Also, it should be noted that the CW-721 `sender` field is inaccurately named, because it is used to hold the address the token came from, not the address that sent it (which is not always the same).  The name is reluctantly kept in [ReceiveNft](#receivenft) to maintain CW-721 compliance, but [BatchReceiveNft](#batchreceivenft) uses `sender` to hold the sending address (which matches both its true role and its SNIP-20 Receive counterpart).  Any contract that is implementing both Receiver Interfaces must be sure that the ReceiveNft `sender` field is actually processed like a BatchReceiveNft `from` field.  Again, apologies for any confusion caused by propagating inaccuracies, but because InterNFT is planning on using CW-721 standards, compliance with CW-721 might be necessary.
 
-## ReceiveNft
+## <a name="receivenft"></a>ReceiveNft
 ReceiveNft may be a HandleMsg variant of any contract that wants to implement a receiver interface.  BatchReceiveNft, which is more informative and more efficient, is preferred over ReceiveNft.  
 ```
 {
@@ -1097,7 +1097,7 @@ ReceiveNft may be a HandleMsg variant of any contract that wants to implement a 
 | token_id | string                         | ID of the sent token                                                                                   | no       |                  |
 | msg      | string (base64 encoded Binary) | Msg used to control receiving logic                                                                    | yes      | nothing          |
 
-## BatchReceiveNft
+## <a name="batchreceivenft"></a>BatchReceiveNft
 BatchReceiveNft may be a HandleMsg variant of any contract that wants to implement a receiver interface.  BatchReceiveNft, which is more informative and more efficient, is preferred over ReceiveNft.
 ```
 {
