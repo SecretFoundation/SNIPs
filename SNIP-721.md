@@ -1420,7 +1420,7 @@ Mint defines the data necessary to perform one minting operation
 | memo             | string                               | `memo` for the mint tx that is only viewable by addresses involved in the mint (minter, owner)     | yes      | nothing              |
 
 ### BatchTransferNft
-BatchTransferNft is used to perform multiple token transfers.  The message sender may specify a list of tokens to transfer to one `recipient` address in each `Transfer` object, and any `memo` provided must be applied to every token transferred in that one `Transfer` object.  The message sender may provide multiple `Transfer` objects to perform transfers to multiple addresses, providing a different `memo` for each address if desired.  Each individual transfer of a token must show separately in transaction histories.  The message sender must have permission to transfer all the tokens listed (either by being the owner or being granted transfer approval) and every listed `token_id` must be valid.  Any token that is transferred to a new owner must have its single-token approvals cleared.
+BatchTransferNft is used to perform multiple token transfers.  The message sender may specify a list of tokens to transfer to one `recipient` address in each [Transfer](#transfer) object, and any `memo` provided must be applied to every token transferred in that one `Transfer` object.  The message sender may provide multiple `Transfer` objects to perform transfers to multiple addresses, providing a different `memo` for each address if desired.  Each individual transfer of a token must show separately in transaction histories.  The message sender must have permission to transfer all the tokens listed (either by being the owner or being granted transfer approval) and every listed `token_id` must be valid.  Any token that is transferred to a new owner must have its single-token approvals cleared.
 
 ##### Request
 ```
@@ -1474,9 +1474,9 @@ The Transfer object provides a list of tokens to transfer to one `recipient` add
 | memo      | string             | `memo` for the transfer transactions that is only viewable by addresses involved in the transfer (recipient, sender, previous owner)| yes      | nothing          |
 
 ### <a name="batchsend"></a>BatchSendNft
-BatchSendNft is used to perform multiple token transfers, and then call the recipient contracts' [BatchReceiveNft](#batchreceivenft) (or [ReceiveNft](#receivenft)) if they have registered their receiver interface with the NFT contract.  The message sender may specify a list of tokens to send to one recipient address in each `Send` object, and any `memo` or `msg` provided must be applied to every token transferred in that one `Send` object.  If the list of transferred tokens belonged to multiple previous owners, a separate BatchReceiveNft callback must be performed for each of the previous owners.  If the contract only implements ReceiveNft, one ReceiveNft must be performed for every sent token.  Therefore it is highly recommended to implement BatchReceiveNft if there is the possibility of being sent multiple tokens at one time.  This will significantly reduce gas costs.  
+BatchSendNft is used to perform multiple token transfers, and then call the recipient contracts' [BatchReceiveNft](#batchreceivenft) (or [ReceiveNft](#receivenft)) if they have registered their receiver interface with the NFT contract.  The message sender may specify a list of tokens to send to one recipient address in each [Send](#send) object, and any `memo` or `msg` provided must be applied to every token transferred in that one `Send` object.  If the list of transferred tokens belonged to multiple previous owners, a separate BatchReceiveNft callback must be performed for each of the previous owners.  If the contract only implements ReceiveNft, one ReceiveNft must be performed for every sent token.  Therefore it is highly recommended to implement BatchReceiveNft if there is the possibility of being sent multiple tokens at one time.  This will significantly reduce gas costs.  
 
-The message sender may provide multiple `Send` objects to perform sends to multiple addresses, providing a different `memo` and `msg` for each address if desired.  Each individual transfer of a token must show separately in transaction histories.  The message sender must have permission to transfer all the tokens listed (either by being the owner or being granted transfer approval) and every token ID must be valid.  Any token that is transferred to a new owner must have its single-token approvals cleared.
+The message sender may provide multiple [Send](#send) objects to perform sends to multiple addresses, providing a different `memo` and `msg` for each address if desired.  Each individual transfer of a token must show separately in transaction histories.  The message sender must have permission to transfer all the tokens listed (either by being the owner or being granted transfer approval) and every token ID must be valid.  Any token that is transferred to a new owner must have its single-token approvals cleared.
 If any BatchReceiveNft (or ReceiveNft) callback fails, the entire transaction must be reverted (even the transfers must not take place).
 
 ##### Request
@@ -1515,7 +1515,7 @@ If any BatchReceiveNft (or ReceiveNft) callback fails, the entire transaction mu
 ```
 
 #### <a name="send"></a>Send
-The Send object provides a list of tokens to transfer to one recipient address, as well as an optional `memo` that would be included with every logged token transfer, and an optional msg that would be included with every BatchReceiveNft or ReceiveNft ([see above](#receiver)) callback made as a result of this Send object.  While Send keeps the `contract` field name in order be consistent with CW-721 specification, Secret Network does not have the same limitations as Cosmos, and it is possible to use BatchSendNft to transfer token ownership to a personal address (not a contract) or to a contract that does not implement any Receiver Interface.
+The Send object provides a list of tokens to transfer to one recipient address, as well as an optional `memo` that would be included with every logged token transfer, and an optional `msg` that would be included with every [BatchReceiveNft](#batchreceivenft) or [ReceiveNft](#receivenft) callback made as a result of this Send object.  While Send keeps the `contract` field name in order be consistent with CW-721 specification, Secret Network does not have the same limitations as Cosmos, and it is possible to use [BatchSendNft](#batchsend) to transfer token ownership to a personal address (not a contract) or to a contract that does not implement any [Receiver Interface](#receiver).
 ```
 {
 	"contract": "address_receiving_the_tokens",
@@ -1530,7 +1530,7 @@ The Send object provides a list of tokens to transfer to one recipient address, 
 |-----------|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------|----------|------------------|
 | contract  | string (HumanAddr)             | Address receiving the listed tokens                                                                                         | no       |                  |
 | token_ids | array of string                | List of token IDs to send to the recipient                                                                                  | no       |                  |
-| msg       | string (base64 encoded Binary) | Msg included with every BatchReceiveNft (or ReceiveNft) callback performed for this `Send` object                           | yes      | nothing          |
+| msg       | string (base64 encoded Binary) | `msg` included with every BatchReceiveNft (or ReceiveNft) callback performed for this `Send` object                         | yes      | nothing          |
 | memo      | string                         | `memo` for the transfer txs that is only viewable by addresses involved in the transfer (recipient, sender, previous owner) | yes      | nothing          |
 
 ## Burning
@@ -1565,7 +1565,7 @@ BurnNft is used to burn a single token, providing an optional `memo` to include 
 ```
 
 ### BatchBurnNft
-BatchBurnNft is used to burn multiple tokens.  The message sender may specify a list of tokens to burn in each `Burn` object, and any `memo` provided must be applied to every token burned in that one `Burn` object.  The message sender will usually list every token to be burned in one `Burn` object, but if a different `memo` is needed for different tokens being burned, multiple `Burn` objects may be listed. Each individual burning of a token must show separately in transaction histories.  The message sender must have permission to burn all the tokens listed.  Implementation details regarding who is authorized to burn tokens is left to the contract developer.  The [reference implementation](https://github.com/baedrik/snip721-reference-impl) allows only the token owner and anyone else with valid transfer approval to burn a token.
+BatchBurnNft is used to burn multiple tokens.  The message sender may specify a list of tokens to burn in each [Burn](#burn) object, and any `memo` provided must be applied to every token burned in that one `Burn` object.  The message sender will usually list every token to be burned in one `Burn` object, but if a different `memo` is needed for different tokens being burned, multiple `Burn` objects may be listed. Each individual burning of a token must show separately in transaction histories.  The message sender must have permission to burn all the tokens listed.  Implementation details regarding who is authorized to burn tokens is left to the contract developer.  The [reference implementation](https://github.com/baedrik/snip721-reference-impl) allows only the token owner and anyone else with valid transfer approval to burn a token.
 
 ##### Request
 ```
@@ -1684,7 +1684,7 @@ Reveal unwraps the sealed private metadata, irreversibly marking the token as un
 ## Queries
 
 ### IsUnwrapped
-IsUnwrapped indicates whether the token has been unwrapped.
+IsUnwrapped indicates whether the token has been unwrapped.  This query is not authenticated.
 
 ##### Request
 ```
