@@ -45,7 +45,7 @@ This handles ownership, transfers, approvals, and metadata. These messages and q
 ## Messages
 
 ### TransferNft
-TransferNft is used to transfer ownership of the token to the recipient address.  This requires a valid `token_id` and the message sender must either be the owner or an address with valid transfer approval.  If the token is transferred to a new owner, its single-token approvals must be cleared.
+TransferNft is used to transfer ownership of the token to the `recipient` address.  This requires a valid `token_id` and the message sender must either be the owner or an address with valid transfer approval.  If the token is transferred to a new owner, its single-token approvals must be cleared.
 
 ##### Request
 ```
@@ -75,7 +75,7 @@ TransferNft is used to transfer ownership of the token to the recipient address.
 ```
 
 ### <a name="sendnft"></a>SendNft
-SendNft is used to transfer ownership of the token to the `contract` address, and then call the recipient's BatchReceiveNft (or ReceiveNft, [see below](#receiver)) if the recipient contract has registered its receiver interface with the NFT contract.  While SendNft keeps the `contract` field name in order to maintain CW-721 compliance, Secret Network does not have the same limitations as Cosmos, and it is possible to use SendNft to transfer token ownership to a personal address (not a contract) or to a contract that does not implement any Receiver Interface.
+SendNft is used to transfer ownership of the token to the `contract` address, and then call the recipient's BatchReceiveNft (or ReceiveNft, [see below](#receiver)) if the recipient contract has registered its receiver interface with the NFT contract.  While SendNft keeps the `contract` field name in order to maintain CW-721 compliance, Secret Network does not have the same limitations as Cosmos, and it is possible to use SendNft to transfer token ownership to a personal address (not a contract) or to a contract that does not implement any [Receiver Interface](#receiver).
 
 SendNft requires a valid `token_id` and the message sender must either be the owner or an address with valid transfer approval.  If the token is transferred to a new owner, its single-token approvals must be cleared.  If the BatchReceiveNft (or ReceiveNft) callback fails, the entire transaction must be reverted (even the transfer must not take place).
 
@@ -951,12 +951,12 @@ TransactionHistory displays an optionally paginated list of transactions (mint, 
 	}
 }
 ```
-| Name        | Type               | Description                                                                                                       | Optional | Value If Omitted                     |
-|-------------|--------------------|-------------------------------------------------------------------------------------------------------------------|----------|--------------------------------------|
-| address     | string (HumanAddr) | The address whose transaction history is being queried                                                            | no       |                                      |
-| viewing_key | string             | The address' viewing key                                                                                          | no       |                                      |
-| page        | number (u32)       | The page number to display, where the first transaction shown skips the page * page_size most recent transactions | yes      | 0                                    |
-| page_size   | number (u32)       | Number of transactions to return                                                                                  | yes      | developer's discretion               |
+| Name        | Type               | Description                                                                                                           | Optional | Value If Omitted       |
+|-------------|--------------------|-----------------------------------------------------------------------------------------------------------------------|----------|------------------------|
+| address     | string (HumanAddr) | The address whose transaction history is being queried                                                                | no       |                        |
+| viewing_key | string             | The address' viewing key                                                                                              | no       |                        |
+| page        | number (u32)       | The page number to display, where the first transaction shown skips the `page` * `page_size` most recent transactions | yes      | 0                      |
+| page_size   | number (u32)       | Number of transactions to return                                                                                      | yes      | developer's discretion |
 
 ##### Response
 ```
@@ -1012,7 +1012,7 @@ TransactionHistory displays an optionally paginated list of transactions (mint, 
 | txs  | array of [Tx (see below)](#tx) | list of transactions in reverse chronological order that involve the specified address | no       |
 
 #### <a name="tx"></a> Tx
-The Tx object contains all the information pertaining to a mint, burn, or transfer transaction.
+The Tx object contains all the information pertaining to a [mint](#txmint), [burn](#txburn), or [transfer](#txxfer) transaction.
 ```
 {
 	"tx_id": 9999,
@@ -1033,7 +1033,7 @@ The Tx object contains all the information pertaining to a mint, burn, or transf
 #### <a name="txaction"></a> TxAction
 The TxAction object defines the type of transaction and holds the information specific to that type.
 
-* TxAction::Mint
+* <a name="txmint"></a>TxAction::Mint
 ```
 {
 	"minter": "address_that_minted_the_token",
@@ -1046,7 +1046,7 @@ The TxAction object defines the type of transaction and holds the information sp
 | minter    | string (HumanAddr) | The address that minted the token                                              | no       |
 | recipient | string (HumanAddr) | The address of the newly minted token's owner                                  | no       |
 
-* TxAction::Transfer
+* <a name="txxfer"></a>TxAction::Transfer
 ```
 {
 	"from": "previous_owner_of_the_token",
@@ -1061,7 +1061,7 @@ The TxAction object defines the type of transaction and holds the information sp
 | sender    | string (HumanAddr) | The address that sent the token if different than the previous owner           | yes      |
 | recipient | string (HumanAddr) | The new owner of the token                                                     | no       |
 
-* TxAction::Burn
+* <a name="txburn"></a>TxAction::Burn
 ```
 {
 	"owner": "previous_owner_of_the_token",
@@ -1077,8 +1077,7 @@ The TxAction object defines the type of transaction and holds the information sp
 # <a name="receiver"></a>Receiver Interface
 When the SNIP-721 contract executes [SendNft](#sendnft) and [BatchSendNft](#batchsend) messages, it must perform a callback to the receiving contract's receiver interface if the contract had registered its code hash using [RegisterReceiveNft](#registerreceive).  [BatchReceiveNft](#batchreceivenft) is preferred over [ReceiveNft](#receivenft), because ReceiveNft does not allow the recipient to know who sent the token, only its previous owner, and ReceiveNft can only process one token.  So it is inefficient when sending multiple tokens to the same contract (a deck of game cards for instance).  ReceiveNft primarily exists just to maintain CW-721 compliance.
 
-<a name="cwsender"></a>
-Also, it should be noted that the CW-721 `sender` field is inaccurately named, because it is used to hold the address the token came from, not the address that sent it (which is not always the same).  The name is reluctantly kept in [ReceiveNft](#receivenft) to maintain CW-721 compliance, but [BatchReceiveNft](#batchreceivenft) uses `sender` to hold the sending address (which matches both its true role and its SNIP-20 Receive counterpart).  Any contract that is implementing both Receiver Interfaces must be sure that the ReceiveNft `sender` field is actually processed like a BatchReceiveNft `from` field.  Again, apologies for any confusion caused by propagating inaccuracies, but because [InterNFT](https://internft.org) is planning on using CW-721 standards, compliance with CW-721 might be necessary.
+<a name="cwsender"></a>Also, it should be noted that the CW-721 `sender` field is inaccurately named, because it is used to hold the address the token came from, not the address that sent it (which is not always the same).  The name is reluctantly kept in [ReceiveNft](#receivenft) to maintain CW-721 compliance, but [BatchReceiveNft](#batchreceivenft) uses `sender` to hold the sending address (which matches both its true role and its SNIP-20 Receive counterpart).  Any contract that is implementing both Receiver Interfaces must be sure that the ReceiveNft `sender` field is actually processed like a BatchReceiveNft `from` field.  Again, apologies for any confusion caused by propagating inaccuracies, but because [InterNFT](https://internft.org) is planning on using CW-721 standards, compliance with CW-721 might be necessary.
 
 ## <a name="receivenft"></a>ReceiveNft
 ReceiveNft may be a HandleMsg variant of any contract that wants to implement a receiver interface.  [BatchReceiveNft](#batchreceivenft), which is more informative and more efficient, is preferred over ReceiveNft.  
@@ -1395,7 +1394,7 @@ BatchMintNft mints a list of tokens.
 The IDs of the minted tokens should also be returned in a LogAttribute with the key `minted`.
 
 #### <a name="mint"></a>Mint
-Mint defines the data necessary to perform one minting operation
+The Mint object defines the data necessary to mint one token.
 ```
 {
 	"token_id": "optional_ID_of_new_token",
