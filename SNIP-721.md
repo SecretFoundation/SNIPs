@@ -1315,7 +1315,7 @@ SetPrivateMetadata will set the private metadata to the input metadata.  The SNI
 }
 ```
 
-## Queries
+## Query
 
 ### Minters
 Minters returns the list of addresses that are authorized to mint tokens.  This query is not authenticated.
@@ -1621,7 +1621,7 @@ The Burn object provides a list of tokens to burn, as well as an optional `memo`
 ## Making the Owner and/or Private Metadata Public
 A SNIP-721 contract may wish to allow an owner to make a token's owner and/or its private metadata public.  It may also choose to allow an address to make all their tokens' owner and/or private metadata public.  The [reference implementation](https://github.com/baedrik/snip721-reference-impl) does this using the same convention as [SetWhitelistedApproval](#setwhitelisted).
 
-## Messages
+## Message
 
 ### <a name="setglobal"></a>SetGlobalApproval
 The owner of a token can use SetGlobalApproval to make ownership and/or private metadata viewable by everyone.  This can be set for a single token or for an owner's entire inventory of tokens by choosing the appropriate [AccessLevel](#accesslevel).  SetGlobalApproval can also be used to revoke any global approval previously granted.
@@ -1658,7 +1658,7 @@ The owner of a token can use SetGlobalApproval to make ownership and/or private 
 ## Lootboxes and Wrapped Cards
 The [reference implementation](https://github.com/baedrik/snip721-reference-impl) provides a [configuration setting](https://github.com/baedrik/snip721-reference-impl/blob/master/README.md#config) that prevents anyone, even the owner, from viewing or altering the private metadata of a token until it is unwrapped by calling [Reveal](#reveal).  This enables creating lootboxes or sealed "cards" that have already determined contents instead of randomly determining the contents when they are unwrapped.  If a developer chooses to implement this Seal/Reveal functionality in their own SNIP-721 contract, they may also wish to follow the same message formats.
 
-## Messages
+## Message
 
 ### <a name="reveal"></a>Reveal
 Reveal unwraps the sealed private metadata, irreversibly marking the token as unwrapped.
@@ -1686,7 +1686,7 @@ Reveal unwraps the sealed private metadata, irreversibly marking the token as un
 }
 ```
 
-## Queries
+## Query
 
 ### IsUnwrapped
 IsUnwrapped indicates whether the token has been unwrapped.  This query is not authenticated.
@@ -1714,3 +1714,44 @@ IsUnwrapped indicates whether the token has been unwrapped.  This query is not a
 | Name                | Type | Description                                                          | Optional | 
 |---------------------|------|----------------------------------------------------------------------|----------|
 | token_is_unwrapped  | bool | True if the token is unwrapped                                       | no       |
+
+## Verifying Transfer Approval
+A SNIP-721 contract may wish to provide a query for contracts to use to verify that they can transfer all the tokens they plan to attempt, instead of allowing the (Batch)SendNft/(Batch)TransferNft/(Batch)BurnNft to throw an error if it fails due to lack of approval.
+
+## Query
+
+### <a name="verifyapproval"></a> VerifyTransferApproval
+VerifyTransferApproval will verify that the specified address has approval to transfer the entire provided list of tokens.  As explained [above](#queryblockinfo), queries may experience a delay in revealing expired approvals, so it is possible that a transfer attempt will still fail even after being verified by VerifyTransferApproval.  If the address does not have transfer approval on all the tokens, the response will indicate the first token encountered that can not be transferred by the address.
+
+##### Request
+```
+{
+	"verify_transfer_approval": {
+		"token_ids": [
+			"list", "of", "tokens", "to", "check", "for", "transfer", "approval", "..."
+		],
+		"address": "address_to_use_for_approval_checking",
+		"viewing_key": "address'_viewing_key"
+	}
+}
+```
+| Name        | Type               | Description                                                                              | Optional | Value If Omitted |
+|-------------|--------------------|------------------------------------------------------------------------------------------|----------|------------------|
+| token_ids   | array of string    | List of tokens to check for the address' transfer approval                               | no       |                  |
+| address     | string (HumanAddr) | Address being checked for transfer approval                                              | no       |                  |
+| viewing_key | string             | The address' viewing key                                                                 | no       |                  |
+
+##### Response
+```
+{
+	"verify_transfer_approval": {
+		"approved_for_all": true | false,
+		"first_unapproved_token": "token_id"
+	}
+}
+```
+| Name                   | Type   | Description                                                                       | Optional | 
+|------------------------|--------|-----------------------------------------------------------------------------------|----------|
+| approved_for_all       | bool   | True if the `address` has transfer approval on all the `token_ids`                | no       |
+| first_unapproved_token | string | The first token in the list that the `address` does not have approval to transfer | yes      |
+
