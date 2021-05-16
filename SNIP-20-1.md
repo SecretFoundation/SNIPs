@@ -186,6 +186,9 @@ The response should look as described below.
 * The `memo` field may be missing or `null`, but if present it MUST be the
   memo that was attached to the message sent by the user in the described
   transaction.
+* The `timestamp` and `block_height` MUST be the same as the fields of the same
+  name described above in
+  [Timestamp and Block Height](#Timestamp-and-Block-Height).
 
 More details are described below.
 
@@ -208,12 +211,14 @@ the variants of `TxAction`.
     "txs": [
       {
         "id": "optional ID",
-        "action": {},
-        "memo": "private message",
+        "timestamp": 12000,
+        "block_height": 100,
         "coins": {
           "denom": "coin denomination/name",
           "amount": "Uint128"
-        }
+        },
+        "memo": "private message",
+        "action": {}
       },
       { "...": "..." }
     ]
