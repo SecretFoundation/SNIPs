@@ -14,7 +14,7 @@ accounts easier (provided a viewing key, of course!).
     * [Total Transfer Count](#Total-Transfer-Count)
     * [Timestamp and Block Height](#Timestamp-and-Block-Height)
 * [Transaction History](#Transaction-History)
-* [Improved Allowance](#Improved Allowance)
+* [Improved Allowance](#Improved-Allowance)
 
 ## Private Memo
 
