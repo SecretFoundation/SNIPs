@@ -230,10 +230,13 @@ the variants of `TxAction`.
 
 * `Transfer` - represents transactions triggered by `Transfer`, `TransferFrom`,
   `Send`, and `SendFrom`. The fields in this object correspond to the fields
-  described in `TransferHistory`. The only difference is that if `from` is
-  `null` or missing, it MUST be assumed to equal the `sender` field.
-  This happens in the `*From` messages, which use allowance from a third
-  `from` address to perform the operation.
+  described in `TransferHistory`.
+  * `from` - The address from which funds were moved.
+  * `sender` - The address which performed the operation.
+  * `recipient` - The address to which funds were moved.
+  
+  `from` and `sender` will differ in events created by the `*From` messages,
+  which use allowance from a third `from` address to perform the operation.
   
 ```json
 {
@@ -259,12 +262,12 @@ the variants of `TxAction`.
 }
 ```
 
-* `Burn` - represents transactions triggered by `Burn`. The `burner` field
-  MUST specify the address of the account that performed the burn operation. 
-  The `owner` field is optional and MUST be included when representing a
-  `BurnFrom` operation. If `mull` or missing it can be assumed to equal the
-  `burner` address. If present, it specifies the account whose funds were
-  burned. This item will show up in both the minter's and recipient's histories.
+* `Burn` - represents transactions triggered by `Burn`.
+  * `burner` - The address that performed the burn.
+  * `owner` - The address whose funds were burned.
+  
+  This item will show up in both the minter's and recipient's histories.
+  `burner` and `owner` will differ in events created by `BurnFrom`,
 
 ```json
 {
