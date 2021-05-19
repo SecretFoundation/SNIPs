@@ -1,4 +1,4 @@
-# SNIP-20-1 - Appendix 1 to [SNIP-20](/SNIP-20.md)
+# SNIP-21 - Minor improvements to [SNIP-20](/SNIP-20.md)
 
 This document describes several optional enhancements to the SNIP-20 spec.
 Contracts that support the existing SNIP-20 standard are still considered
@@ -295,6 +295,3 @@ the variants of `TxAction`.
   "redeem": {}
 }
 ```
-
-## Improved Allowance
-TODO: Should this be a separate document?
