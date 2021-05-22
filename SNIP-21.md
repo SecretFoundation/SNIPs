@@ -12,7 +12,7 @@ accounts easier (provided a viewing key, of course!).
 * [Private Memo](#Private-Memo)
 * [Transfer History](#Transfer-History)
     * [Total Transfer Count](#Total-Transfer-Count)
-    * [Timestamp and Block Height](#Timestamp-and-Block-Height)
+    * [Block Time and Height](#Block-Time-and-Height)
 * [Transaction History](#Transaction-History)
 
 ## Private Memo
@@ -118,12 +118,12 @@ Example `TransferHistory` response:
 }
 ```
 
-### Timestamp and Block Height
+### Block Time and Height
 
 The items returned by the `TransferHistory` query MAY contain additional fields
-called `timestamp` and `block_height`. These two fields MUST correspond to the
-block height and block time of the block that included the transaction that
-recorded the transfer being reported.
+called `block_time` and `block_height`. These two fields MUST correspond to the
+block time and block height of the block that included the transaction that
+recorded the transfer being reported. The block time is in Unix time.
 
 Example `TransferHistory` response:
 ```json
@@ -139,7 +139,7 @@ Example `TransferHistory` response:
           "denom": "FOOBAR",
           "amount": "123000000"
         },
-        "timestamp": 12006,
+        "block_time": 12006,
         "block_height": 101
       },
       {
@@ -151,7 +151,7 @@ Example `TransferHistory` response:
           "denom": "FOOBAR",
           "amount": "123000000"
         },
-        "timestamp": 12000,
+        "block_time": 12000,
         "block_height": 100
       }
     ]
@@ -188,9 +188,9 @@ The response should look as described below.
 * The `memo` field may be missing or `null`, but if present it MUST be the
   memo that was attached to the message sent by the user in the described
   transaction.
-* The `timestamp` and `block_height` MUST be the same as the fields of the same
+* The `block_time` and `block_height` MUST be the same as the fields of the same
   name described above in
-  [Timestamp and Block Height](#Timestamp-and-Block-Height).
+  [Block Time and Height](#Block-Time-and-Height).
 
 More details are described below.
 
@@ -213,7 +213,7 @@ the variants of `TxAction`.
     "txs": [
       {
         "id": "optional ID",
-        "timestamp": 12000,
+        "block_time": 12000,
         "block_height": 100,
         "coins": {
           "denom": "coin denomination/name",
