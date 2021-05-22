@@ -13,6 +13,7 @@ The features specified in this document are batched versions of the existing
 * [BatchTransferFrom](#BatchTransferFrom)
 * [BatchSendFrom](#BatchSendFrom)
 * [BatchMint](#BatchMint)
+* [BatchBurnFrom](#BatchBurnFrom)
 
 ## BatchTransfer
 Moves tokens from the account that appears in the Cosmos message sender field
@@ -105,6 +106,9 @@ accounts. This action MUST fail if the Cosmos message sender does not have an
 _allowance_ limit that is equal or greater than the amount of tokens sent for
 the  _owner_ accounts
 
+This function should be available when a contract supports the
+[Allowances](./SNIP-20.md#Allowances) interface.
+
 ### Request
 Accounts SHOULD be a valid bech32 address, but
 contracts may use a different naming scheme as well.
@@ -145,6 +149,9 @@ but to send them to other addresses to trigger a given action.
 Note BatchSendFrom will set the `Receive::{sender}` to be the
 `env.message.sender` (the account that triggered the transfer) rather than
 the owner account (the account the money is coming from).
+
+This function should be available when a contract supports the
+[Allowances](./SNIP-20.md#Allowances) interface.
 
 ### Request
 Accounts SHOULD be a valid bech32 address, but
@@ -188,6 +195,9 @@ If the Cosmos message sender is an allowed minter, this will create new tokens
 in the balances of the listed accounts, matching the amount listed in each
 action.
 
+This function should be available when a contract supports the
+[Mintable](./SNIP-20.md#Mintable) interface.
+
 ### Request
 Accounts SHOULD be a valid bech32 address, but
 contracts may use a different naming scheme as well.
@@ -220,3 +230,42 @@ Example:
 }
 ```
 
+## BatchBurnFrom
+This works like BatchTransferFrom, but burns the tokens instead of
+transferring them. This will reduce the owners' balances, total_supply
+and the caller's allowance.
+
+This function should be available when a contract supports both the
+[Mintable](./SNIP-20.md#Mintable) and [Allowances](./SNIP-20.md#Allowances) interfaces.
+
+##### Request
+Accounts SHOULD be a valid bech32 address, but
+contracts may use a different naming scheme as well.
+
+* `.actions[].owner` - Account to take tokens __from__
+* `.actions[].amount` - The amount of tokens to burn as a Uint128
+  (integer string)
+* `.padding` - Optional ignored string used to maintain constant-length messages
+
+Example:
+```json
+{
+  "batch_transfer": {
+    "actions": [
+      { "owner": "secret1", "amount": "123" },
+      { "owner": "secret1", "amount": "123" },
+      { "owner": "secret1", "amount": "123" }
+    ],
+    "padding": "this string is ignored"
+  }
+}
+```
+
+##### Response
+```json
+{
+  "batch_burn_from": {
+    "status": "success"
+  }
+}
+```
