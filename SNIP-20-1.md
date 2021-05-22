@@ -14,13 +14,13 @@ accounts easier (provided a viewing key, of course!).
     * [Total Transfer Count](#Total-Transfer-Count)
     * [Timestamp and Block Height](#Timestamp-and-Block-Height)
 * [Transaction History](#Transaction-History)
-* [Improved Allowance](#Improved-Allowance)
 
 ## Private Memo
 
-The existing `Transfer`, `TransferFrom`, `Send`, and `SendFrom` messages MAY
+The existing `Transfer`, `TransferFrom`, `Send`, `SendFrom`,
+`Burn`, `Mint`, and `BurnFrom` messages MAY
 also accept a `memo` field, which is just a regular JSON string. This memo
-SHOULD be saved in the transfer history of the balances involved in the
+SHOULD be saved in the transaction history of the balances involved in the
 transaction (`from`, `sender`, and `receiver`) and served as the `memo` field
 of items in the responses to the `TransferHistory` and `TransactionHistory`
 (introduced in this document) queries.
@@ -66,8 +66,10 @@ Example `TransferHistory` response:
 }
 ```
 
-### Open questions
-* should `Burn`, `Mint` etc also be included?
+### Receiver Interface
+When sending a `Receive` callback as part of a `Send` or `SendFrom` transaction,
+The `Receive` message SHOULD contain the same `memo` that was supplied in the
+original message.
 
 ## Transfer History
 
