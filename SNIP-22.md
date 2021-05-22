@@ -72,7 +72,8 @@ contracts may use a different naming scheme as well.
 * `.actions[].recipient` - Account to take tokens __to__
 * `.actions[].amount` - The amount of tokens to transfer as a Uint128
   (integer string)
-* `.actions[].msg` - Base64 encoded message, which the recipient will receive
+* `.actions[].msg` - Optional base64 encoded message, which the recipient will
+  receive
 * `.padding` - Optional ignored string used to maintain constant-length messages
 
 Example:
@@ -153,7 +154,8 @@ contracts may use a different naming scheme as well.
 * `.actions[].recipient` - Account to take tokens __to__
 * `.actions[].amount` - The amount of tokens to transfer as a Uint128
   (integer string)
-* `.actions[].msg` - Base64 encoded message, which the recipient will receive
+* `.actions[].msg` - Optional base64 encoded message, which the recipient will
+  receive
 * `.padding` - Optional ignored string used to maintain constant-length messages
 
 Example:
