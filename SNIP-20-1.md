@@ -266,7 +266,7 @@ the variants of `TxAction`.
   * `burner` - The address that performed the burn.
   * `owner` - The address whose funds were burned.
   
-  This item will show up in both the minter's and recipient's histories.
+  This item will show up in both the burner's and owner's histories.
   `burner` and `owner` will differ in events created by `BurnFrom`,
 
 ```json
