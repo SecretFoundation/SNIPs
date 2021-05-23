@@ -5,6 +5,85 @@ The [SNIP-721 reference implementation](https://github.com/baedrik/snip721-refer
 
 This specification is split into multiple sections, a contract may only implement some of this functionality, but must implement the base functionality.
 
+* [Introduction](#Introduction)
+    * [Introduction](#Introduction)
+* [Base](#Base)
+    
+    messages
+    * [TransferNft](#transfernft)
+    * [SendNft](#sendnft)
+    * [Approve](#approve)
+    * [Revoke](#revoke)
+    * [ApproveAll](#approveall)
+    * [RevokeAll](#revokeall)
+    * [SetWhitelistedApproval](#setwhitelistedapproval)
+    * [RegisterReceiveNft](#registerreceivenft)
+    * [CreateViewingKey](#createviewingkey)
+    * [SetViewingKey](#setviewingkey)
+    
+    Queries
+    * [ContractInfo](#contractinfo)
+    * [NumTokens](#numtokens)
+    * [AllTokens](#alltokens)
+    * [OwnerOf](#ownerof)
+    * [NftInfo](#nftinfo)
+    * [AllNftInfo](#allnftinfo)
+    * [PrivateMetadata](#privatemetadata)
+    * [NftDossier](#nftdossier)
+    * [TokenApprovals](#tokenapprovals)
+    * [ApprovedForAll](#approvedforall)
+    * [InventoryApprovals](#inventoryapprovals)
+    * [Tokens](#tokens)
+    * [TransactionHistory](#transactionhistory)
+
+* [Receiver Interface](#Receiver-Interface)
+* [Optional Functionality](#Optional-Functionality)
+    * [Minting and Modifying Tokens](#minting-and-modifying-tokens)
+
+        Messages
+        * [MintNft](#mintnft)
+        * [AddMinters](#addminters)
+        * [RemoveMinters](#removeminters)
+        * [SetMinters](#setminters)
+        * [SetPublicMetadata](#setpublicmetadata)
+        * [SetPrivateMetadata](#setprivatemetadata)
+
+        Queries
+        * [Minters](#minters)
+    
+    * [Batch Processing](#batch-processing)
+
+        Messages
+        * [BatchMintNft](#batchmintnft)
+        * [BatchTransferNft](#batchtransfernft)
+        * [BatchSendNft](#batchsendnft)
+
+    * [Burning](#burning)
+
+        Messages
+        * [BurnNft](#burnnft)
+        * [BatchBurnNft](#batchburnnft)
+
+    * [Making the Owner and/or Private Metadata Public](#making-the-owner-andor-private-metadata-public)
+
+        Messages
+        * [SetGlobalApproval](#setglobalapproval)
+
+    * [Lootboxes and Wrapped Cards](#lootboxes-and-wrapped-cards)
+
+        Messages
+        * [Reveal](#reveal)
+        
+        Queries
+        * [IsUnwrapped](#isunwrapped)
+    
+    * [Verifying Transfer Approval](#verifying-transfer-approval)
+
+        Queries
+        * [VerifyTransferApproval](#verifytransferapproval)
+
+# Introduction
+
 ## Scope
 This document aims to set standard interfaces that SNIP-721 contract implementors will create, and that both wallet implementors & dependent contract creators will consume.  For this reason, the focus of this document is to merely give SNIP-721 contract implementors the tools needed to create contracts that fully maintain privacy but not to specify implementation details.  That said, this document may, at times, mention implementation details of the [SNIP-721 reference implementation](https://github.com/baedrik/snip721-reference-impl) as non-base functionality that developers might choose to mirror.
 
@@ -74,8 +153,8 @@ TransferNft is used to transfer ownership of the token to the `recipient` addres
 }
 ```
 
-### <a name="sendnft"></a>SendNft
-SendNft is used to transfer ownership of the token to the `contract` address, and then call the recipient's BatchReceiveNft (or ReceiveNft, [see below](#receiver)) if the recipient contract has registered its receiver interface with the NFT contract.  While SendNft keeps the `contract` field name in order to maintain CW-721 compliance, Secret Network does not have the same limitations as Cosmos, and it is possible to use SendNft to transfer token ownership to a personal address (not a contract) or to a contract that does not implement any [Receiver Interface](#receiver).
+### SendNft
+SendNft is used to transfer ownership of the token to the `contract` address, and then call the recipient's BatchReceiveNft (or ReceiveNft, [see below](#receiver-interface)) if the recipient contract has registered its receiver interface with the NFT contract.  While SendNft keeps the `contract` field name in order to maintain CW-721 compliance, Secret Network does not have the same limitations as Cosmos, and it is possible to use SendNft to transfer token ownership to a personal address (not a contract) or to a contract that does not implement any [Receiver Interface](#receiver-interface).
 
 SendNft requires a valid `token_id` and the message sender must either be the owner or an address with valid transfer approval.  If the token is transferred to a new owner, its single-token approvals must be cleared.  If the BatchReceiveNft (or ReceiveNft) callback fails, the entire transaction must be reverted (even the transfer must not take place).
 
@@ -109,7 +188,7 @@ SendNft requires a valid `token_id` and the message sender must either be the ow
 ```
 
 ### Approve
-Approve is used to grant an address permission to transfer a single token.  This can only be performed by the token's owner or, in compliance with CW-721, an address that has inventory-wide approval to transfer the owner's tokens.  Approve is provided to maintain compliance with CW-721, but the owner can use [SetWhitelistedApproval](#setwhitelisted) to accomplish the same thing if specifying a `token_id` and `approve_token` [AccessLevel](#accesslevel) for `transfer`.
+Approve is used to grant an address permission to transfer a single token.  This can only be performed by the token's owner or, in compliance with CW-721, an address that has inventory-wide approval to transfer the owner's tokens.  Approve is provided to maintain compliance with CW-721, but the owner can use [SetWhitelistedApproval](#SetWhitelistedApproval) to accomplish the same thing if specifying a `token_id` and `approve_token` [AccessLevel](#accesslevel) for `transfer`.
 
 ##### Request
 ```
@@ -138,7 +217,7 @@ Approve is used to grant an address permission to transfer a single token.  This
 }
 ```
 
-#### <a name="expiration"></a>Expiration
+#### Expiration
 The Expiration object is used to set an expiration for any approvals granted in the message.  Expiration can be set to a specified blockheight, a time in seconds since epoch 01/01/1970, or "never".  Values for blockheight and time are specified as a u64.  If no expiration is given, it must default to "never".
 
 Also, because the current blockheight and time will not be available to queries until a future hardfork makes that possible, please [see above](#queryblockinfo) regarding an imprecise, and possibly delayed way to enforce expirations on queries in the meantime.  This imprecise method must only be applied when checking an expiration during a query.  When checking an expiration during a message, the blockheight and time are available and exact expiration must be enforced.
@@ -148,7 +227,7 @@ Also, because the current blockheight and time will not be available to queries 
 * `{"at_height": 3000000}` - the approval will expire at blockheight 3000000 (height value is u64)
 
 ### Revoke
-Revoke is used to revoke from an address the permission to transfer this single token.  This can only be performed by the token's owner or, in compliance with CW-721, an address that has inventory-wide approval to transfer the owner's tokens (referred to as an operator later). However, one operator may not revoke transfer permission of even one single token away from another operator.  Revoke is provided to maintain compliance with CW-721, but the owner can use [SetWhitelistedApproval](#setwhitelisted) to accomplish the same thing if specifying a `token_id` and `revoke_token` [AccessLevel](#accesslevel) for `transfer`.
+Revoke is used to revoke from an address the permission to transfer this single token.  This can only be performed by the token's owner or, in compliance with CW-721, an address that has inventory-wide approval to transfer the owner's tokens (referred to as an operator later). However, one operator may not revoke transfer permission of even one single token away from another operator.  Revoke is provided to maintain compliance with CW-721, but the owner can use [SetWhitelistedApproval](#SetWhitelistedApproval) to accomplish the same thing if specifying a `token_id` and `revoke_token` [AccessLevel](#accesslevel) for `transfer`.
 
 ##### Request
 ```
@@ -176,7 +255,7 @@ Revoke is used to revoke from an address the permission to transfer this single 
 ```
 
 ### ApproveAll
-ApproveAll is used to grant an address permission to transfer all the tokens in the message sender's inventory.  This must include the ability to transfer any tokens the sender acquires after granting this inventory-wide approval.  This also gives the address the ability to grant another address the approval to transfer a single token.  ApproveAll is provided to maintain compliance with CW-721, but the message sender can use [SetWhitelistedApproval](#setwhitelisted) to accomplish the same thing by using `all` [AccessLevel](#accesslevel) for `transfer`.
+ApproveAll is used to grant an address permission to transfer all the tokens in the message sender's inventory.  This must include the ability to transfer any tokens the sender acquires after granting this inventory-wide approval.  This also gives the address the ability to grant another address the approval to transfer a single token.  ApproveAll is provided to maintain compliance with CW-721, but the message sender can use [SetWhitelistedApproval](#SetWhitelistedApproval) to accomplish the same thing by using `all` [AccessLevel](#accesslevel) for `transfer`.
 
 ##### Request
 ```
@@ -204,7 +283,7 @@ ApproveAll is used to grant an address permission to transfer all the tokens in 
 ```
 
 ### RevokeAll
-RevokeAll is used to revoke all transfer approvals granted to an address.  RevokeAll is provided to maintain compliance with CW-721, but the message sender can use [SetWhitelistedApproval](#setwhitelisted) to accomplish the same thing by using `none` [AccessLevel](#accesslevel) for `transfer`.
+RevokeAll is used to revoke all transfer approvals granted to an address.  RevokeAll is provided to maintain compliance with CW-721, but the message sender can use [SetWhitelistedApproval](#SetWhitelistedApproval) to accomplish the same thing by using `none` [AccessLevel](#accesslevel) for `transfer`.
 
 ##### Request
 ```
@@ -229,7 +308,7 @@ RevokeAll is used to revoke all transfer approvals granted to an address.  Revok
 }
 ```
 
-### <a name="setwhitelisted"></a>SetWhitelistedApproval
+### SetWhitelistedApproval
 The owner of a token can use SetWhitelistedApproval to grant an address permission to view ownership, view private metadata, and/or to transfer a single token or every token in the owner's inventory.  SetWhitelistedApproval can also be used to revoke any approval previously granted to the address.
 
 ##### Request
@@ -264,15 +343,15 @@ The owner of a token can use SetWhitelistedApproval to grant an address permissi
 	}
 }
 ```
-#### <a name="accesslevel"></a>AccessLevel
-AccessLevel determines the type of access being granted or revoked to the specified address in a [SetWhitelistedApproval](#setwhitelisted) message or to everyone in a [SetGlobalApproval](#setglobal) message.  Inventory-wide approval and token-specific approval are mutually exclusive levels of access.  The levels are:
+#### AccessLevel
+AccessLevel determines the type of access being granted or revoked to the specified address in a [SetWhitelistedApproval](#SetWhitelistedApproval) message or to everyone in a [SetGlobalApproval](#SetGlobalApproval) message.  Inventory-wide approval and token-specific approval are mutually exclusive levels of access.  The levels are:
 * `"approve_token"` - grant approval only on the token specified in the message
 * `"revoke_token"` - revoke a previous approval on the specified token
 * `"all"` - grant approval for all tokens in the message signer's inventory.  This approval must also apply to any tokens the signer acquires after granting `all` approval
 * `"none"` - revoke any approval (both token and inventory-wide) previously granted to the specified address (or for everyone if using SetGlobalApproval)
 
-### <a name="registerreceive"></a>RegisterReceiveNft
-A contract will use RegisterReceiveNft to notify the SNIP-721 contract that it implements ReceiveNft and possibly also BatchReceiveNft [(see below)](#receiver).  This enables the SNIP-721 contract to call the registered contract whenever it is Sent a token (or tokens).  In order to comply with CW-721, ReceiveNft only informs the recipient contract that it has been sent a single token, and it only informs the recipient contract who the token's previous owner was, not who sent the token (which may be different addresses) despite calling the previous owner `sender` ([see below](#cwsender)).  BatchReceiveNft, on the other hand, can be used to inform a contract that it was sent multiple tokens, and notifies the recipient of both, the token's previous owner and the sender.
+### RegisterReceiveNft
+A contract will use RegisterReceiveNft to notify the SNIP-721 contract that it implements ReceiveNft and possibly also BatchReceiveNft [(see below)](#receiver-interface).  This enables the SNIP-721 contract to call the registered contract whenever it is Sent a token (or tokens).  In order to comply with CW-721, ReceiveNft only informs the recipient contract that it has been sent a single token, and it only informs the recipient contract who the token's previous owner was, not who sent the token (which may be different addresses) despite calling the previous owner `sender` ([see below](#cwsender)).  BatchReceiveNft, on the other hand, can be used to inform a contract that it was sent multiple tokens, and notifies the recipient of both, the token's previous owner and the sender.
 
 ##### Request
 ```
@@ -406,7 +485,7 @@ NumTokens returns the number of tokens controlled by the contract.  If the contr
 |---------|--------------|----------------------------------------------|----------|
 | count   | number (u32) | Number of tokens controlled by this contract | no       |
 
-#### <a name="viewerinfo"></a>ViewerInfo
+#### ViewerInfo
 The ViewerInfo object provides the address and viewing key of the querier.  It is optionally provided in queries where public responses and address-specific responses will differ.
 ```
 {
@@ -455,7 +534,7 @@ AllTokens returns an optionally paginated, lexicographically ordered list of all
 |---------|-----------------|----------------------------------------------------------------------|----------|
 | tokens  | array of string | A list of token IDs controlled by this contract                      | no       |
 
-### <a name="ownerof"></a>OwnerOf
+### OwnerOf
 OwnerOf returns the owner of the specified token if the querier is the owner or has been granted permission to view the owner.  If the querier is the owner, OwnerOf must also display all the addresses that have been given transfer permission.  The transfer approval list is provided as part of CW-721 compliance; however, the token owner is advised to use [NftDossier (see below)](#nftdossier) for a more complete list that includes view_owner and view_private_metadata approvals (which CW-721 is not capable of keeping private).  If no [viewer](#viewerinfo) is provided, OwnerOf must only display the owner if ownership is public for this token.
 
 ##### Request
@@ -499,7 +578,7 @@ OwnerOf returns the owner of the specified token if the querier is the owner or 
 | owner     | string (HumanAddr)                                   | Address of the token's owner                             | no       |
 | approvals | array of [Cw721Approval (see below)](#cw721approval) | List of approvals to transfer this token                 | no       |
 
-#### <a name="cw721approval"></a>Cw721Approval
+#### Cw721Approval
 The Cw721Approval object is used to display CW-721-style approvals which are limited to only permission to transfer, as CW-721 does not enable ownership or metadata privacy.
 ```
 {
@@ -512,7 +591,7 @@ The Cw721Approval object is used to display CW-721-style approvals which are lim
 | spender | string (HumanAddr)                    | Address whitelisted to transfer a token                                         | no       |
 | expires | [Expiration (see above)](#expiration) | The expiration of this transfer approval.  Can be a blockheight, time, or never | no       |
 
-### <a name="nftinfo"></a>NftInfo
+### NftInfo
 NftInfo returns the public [metadata](#metadata) of a token.  All metadata fields are optional to allow for SNIP-721 contracts that choose not to implement metadata.  It follows CW-721 specification, which is based on ERC-721 Metadata JSON Schema.
 
 ##### Request
@@ -543,7 +622,7 @@ NftInfo returns the public [metadata](#metadata) of a token.  All metadata field
 | description | string | Token description                                        | yes      |
 | image       | string | Uri to an image or additional metadata                   | yes      |
 
-#### <a name="metadata"></a>Metadata
+#### Metadata
 Metadata for a token that follows CW-721 metadata specification, which is based on ERC721 Metadata JSON Schema.
 ```
 {
@@ -604,12 +683,12 @@ AllNftInfo displays the result of both [OwnerOf](#ownerof) and [NftInfo](#nftinf
 	}
 }
 ```
-| Name        | Type                                              | Description                                                                 | Optional | 
-|-------------|---------------------------------------------------|-----------------------------------------------------------------------------|----------|
-| access      | [Cw721OwnerOfResponse (see below)](#cw721ownerof) | The token's owner and its transfer approvals if permitted to view this info | no       |
-| info        | [Metadata (see above)](#metadata)                 | The token's public metadata                                                 | yes      |
+| Name        | Type                                                      | Description                                                                 | Optional | 
+|-------------|-----------------------------------------------------------|-----------------------------------------------------------------------------|----------|
+| access      | [Cw721OwnerOfResponse (see below)](#Cw721OwnerOfResponse) | The token's owner and its transfer approvals if permitted to view this info | no       |
+| info        | [Metadata (see above)](#metadata)                         | The token's public metadata                                                 | yes      |
 
-#### <a name="cw721ownerof"></a>Cw721OwnerOfResponse
+#### Cw721OwnerOfResponse
 The Cw721OwnerOfResponse object is used to display a token's owner if the querier has view_owner permission, and the token's transfer approvals if the querier is the token's owner.
 ```
 {
@@ -666,7 +745,7 @@ PrivateMetadata returns the private [metadata](#metadata) of a token if the quer
 | description | string | Private token description                                        | yes      |
 | image       | string | Private uri to an image or additional metadata                   | yes      |
 
-### <a name="nftdossier"></a>NftDossier
+### NftDossier
 NftDossier returns all the information about a token that the viewer is permitted to view.  If no [viewer](#viewerinfo) is provided, NftDossier must only display the information that has been made public.  The response may include the owner, the public metadata, the private metadata, the reason the private metadata is not viewable, whether ownership is public, whether the private metadata is public, and (if the querier is the owner,) the approvals for this token as well as the inventory-wide approvals for the owner.
 
 ##### Request
@@ -733,20 +812,20 @@ NftDossier returns all the information about a token that the viewer is permitte
 	}
 }
 ```
-| Name                                  | Type                                                  | Description                                                                            | Optional | 
-|---------------------------------------|-------------------------------------------------------|----------------------------------------------------------------------------------------|----------|
-| owner                                 | string (HumanAddr)                                    | Address of the token's owner                                                           | yes      |
-| public_metadata                       | [Metadata (see above)](#metadata)                     | The token's public metadata                                                            | yes      |
-| private_metadata                      | [Metadata (see above)](#metadata)                     | The token's private metadata                                                           | yes      |
-| display_private_metadata_error        | string                                                | If the private metadata is not displayed, the corresponding error message              | yes      |
-| owner_is_public                       | bool                                                  | True if ownership is public for this token                                             | no       |
-| public_ownership_expiration           | [Expiration (see above)](#expiration)                 | When public ownership expires for this token.  Can be a blockheight, time, or never    | yes      |
-| private_metadata_is_public            | bool                                                  | True if private metadata is public for this token                                      | no       |
-| private_metadata_is_public_expiration | [Expiration (see above)](#expiration)                 | When public display of private metadata expires.  Can be a blockheight, time, or never | yes      |
-| token_approvals                       | array of [Snip721Approval (see below)](#snipapproval) | List of approvals for this token                                                       | yes      |
-| inventory_approvals                   | array of [Snip721Approval (see below)](#snipapproval) | List of inventory-wide approvals for the token's owner                                 | yes      |
+| Name                                  | Type                                                     | Description                                                                            | Optional | 
+|---------------------------------------|----------------------------------------------------------|----------------------------------------------------------------------------------------|----------|
+| owner                                 | string (HumanAddr)                                       | Address of the token's owner                                                           | yes      |
+| public_metadata                       | [Metadata (see above)](#metadata)                        | The token's public metadata                                                            | yes      |
+| private_metadata                      | [Metadata (see above)](#metadata)                        | The token's private metadata                                                           | yes      |
+| display_private_metadata_error        | string                                                   | If the private metadata is not displayed, the corresponding error message              | yes      |
+| owner_is_public                       | bool                                                     | True if ownership is public for this token                                             | no       |
+| public_ownership_expiration           | [Expiration (see above)](#expiration)                    | When public ownership expires for this token.  Can be a blockheight, time, or never    | yes      |
+| private_metadata_is_public            | bool                                                     | True if private metadata is public for this token                                      | no       |
+| private_metadata_is_public_expiration | [Expiration (see above)](#expiration)                    | When public display of private metadata expires.  Can be a blockheight, time, or never | yes      |
+| token_approvals                       | array of [Snip721Approval (see below)](#Snip721Approval) | List of approvals for this token                                                       | yes      |
+| inventory_approvals                   | array of [Snip721Approval (see below)](#Snip721Approval) | List of inventory-wide approvals for the token's owner                                 | yes      |
 
-#### <a name="snipapproval"></a> Snip721Approval
+#### Snip721Approval
 The Snip721Approval object is used to display all the approvals (and their expirations) that have been granted to a whitelisted address.  The expiration field must be null if the whitelisted address does not have that corresponding permission type.
 ```
 {
@@ -804,13 +883,13 @@ TokenApprovals returns whether the owner and private metadata of a token is publ
 	}
 }
 ```
-| Name                                  | Type                                                  | Description                                                                            | Optional | 
-|---------------------------------------|-------------------------------------------------------|----------------------------------------------------------------------------------------|----------|
-| owner_is_public                       | bool                                                  | True if ownership is public for this token                                             | no       |
-| public_ownership_expiration           | [Expiration (see above)](#expiration)                 | When public ownership expires for this token.  Can be a blockheight, time, or never    | yes      |
-| private_metadata_is_public            | bool                                                  | True if private metadata is public for this token                                      | no       |
-| private_metadata_is_public_expiration | [Expiration (see above)](#expiration)                 | When public display of private metadata expires.  Can be a blockheight, time, or never | yes      |
-| token_approvals                       | array of [Snip721Approval (see above)](#snipapproval) | List of approvals for this token                                                       | no       |
+| Name                                  | Type                                                     | Description                                                                            | Optional | 
+|---------------------------------------|----------------------------------------------------------|----------------------------------------------------------------------------------------|----------|
+| owner_is_public                       | bool                                                     | True if ownership is public for this token                                             | no       |
+| public_ownership_expiration           | [Expiration (see above)](#expiration)                    | When public ownership expires for this token.  Can be a blockheight, time, or never    | yes      |
+| private_metadata_is_public            | bool                                                     | True if private metadata is public for this token                                      | no       |
+| private_metadata_is_public_expiration | [Expiration (see above)](#expiration)                    | When public display of private metadata expires.  Can be a blockheight, time, or never | yes      |
+| token_approvals                       | array of [Snip721Approval (see above)](#Snip721Approval) | List of approvals for this token                                                       | no       |
 
 ### ApprovedForAll
 ApprovedForAll displays all the addresses that have approval to transfer all of the specified owner's tokens.  This is provided to comply with CW-721 specification, but because approvals are private on  Secret Network, if the `owner`'s viewing key is not provided, no approvals should be displayed.  For a more complete list of inventory-wide approvals, the owner should use [InventoryApprovals](#inventoryapprovals) which also includes view_owner and view_private_metadata approvals.
@@ -851,7 +930,7 @@ ApprovedForAll displays all the addresses that have approval to transfer all of 
 |-----------|------------------------------------------------------|----------------------------------------------------------|----------|
 | operators | array of [Cw721Approval (see above)](#cw721approval) | List of approvals to transfer all of the owner's tokens  | no       |
 
-### <a name="inventoryapprovals"></a> InventoryApprovals
+### InventoryApprovals
 InventoryApprovals returns whether all the address' tokens have public ownership and/or public display of private metadata, and lists all the inventory-wide approvals the address has granted.  Only the viewing key for this specified address should be accepted.
 
 ##### Request
@@ -892,13 +971,13 @@ InventoryApprovals returns whether all the address' tokens have public ownership
 	}
 }
 ```
-| Name                                  | Type                                                  | Description                                                                            | Optional | 
-|---------------------------------------|-------------------------------------------------------|----------------------------------------------------------------------------------------|----------|
-| owner_is_public                       | bool                                                  | True if ownership is public for all of this address' tokens                            | no       |
-| public_ownership_expiration           | [Expiration (see above)](#expiration)                 | When public ownership expires for all tokens.  Can be a blockheight, time, or never    | yes      |
-| private_metadata_is_public            | bool                                                  | True if private metadata is public for all of this address' tokens                     | no       |
-| private_metadata_is_public_expiration | [Expiration (see above)](#expiration)                 | When public display of private metadata expires.  Can be a blockheight, time, or never | yes      |
-| inventory_approvals                   | array of [Snip721Approval (see above)](#snipapproval) | List of inventory-wide approvals for this address                                      | no       |
+| Name                                  | Type                                                     | Description                                                                            | Optional | 
+|---------------------------------------|----------------------------------------------------------|----------------------------------------------------------------------------------------|----------|
+| owner_is_public                       | bool                                                     | True if ownership is public for all of this address' tokens                            | no       |
+| public_ownership_expiration           | [Expiration (see above)](#expiration)                    | When public ownership expires for all tokens.  Can be a blockheight, time, or never    | yes      |
+| private_metadata_is_public            | bool                                                     | True if private metadata is public for all of this address' tokens                     | no       |
+| private_metadata_is_public_expiration | [Expiration (see above)](#expiration)                    | When public display of private metadata expires.  Can be a blockheight, time, or never | yes      |
+| inventory_approvals                   | array of [Snip721Approval (see above)](#Snip721Approval) | List of inventory-wide approvals for this address                                      | no       |
 
 ### Tokens
 Tokens displays an optionally paginated, lexicographically ordered list of all the token IDs that belong to the specified `owner`.  It must only display the owner's tokens on which the querier has view_owner permission.  If no viewing key is provided, it must only display the owner's tokens that have public ownership.  When paginating, supply the last token ID received in a response as the `start_after` string of the next query to continue listing where the previous query stopped.
@@ -1011,7 +1090,7 @@ TransactionHistory displays an optionally paginated list of transactions (mint, 
 |------|--------------------------------|----------------------------------------------------------------------------------------|----------|
 | txs  | array of [Tx (see below)](#tx) | list of transactions in reverse chronological order that involve the specified address | no       |
 
-#### <a name="tx"></a> Tx
+#### Tx
 The Tx object contains all the information pertaining to a [mint](#txmint), [burn](#txburn), or [transfer](#txxfer) transaction.
 ```
 {
@@ -1030,7 +1109,7 @@ The Tx object contains all the information pertaining to a [mint](#txmint), [bur
 | action      | [TxAction (see below)](#txaction) | The type of transaction and the information specific to that type                         | no       |
 | memo        | string                            | `memo` for the transaction that is only viewable by addresses involved in the transaction | yes      |
 
-#### <a name="txaction"></a> TxAction
+#### TxAction
 The TxAction object defines the type of transaction and holds the information specific to that type.
 
 * <a name="txmint"></a>TxAction::Mint
@@ -1074,12 +1153,12 @@ The TxAction object defines the type of transaction and holds the information sp
 | owner     | string (HumanAddr) | The previous owner of the token                                                | no       |
 | burner    | string (HumanAddr) | The address that burned the token if different than the previous owner         | yes      |
 
-# <a name="receiver"></a>Receiver Interface
-When the SNIP-721 contract executes [SendNft](#sendnft) and [BatchSendNft](#batchsend) messages, it must perform a callback to the receiving contract's receiver interface if the contract had registered its code hash using [RegisterReceiveNft](#registerreceive).  [BatchReceiveNft](#batchreceivenft) is preferred over [ReceiveNft](#receivenft), because ReceiveNft does not allow the recipient to know who sent the token, only its previous owner, and ReceiveNft can only process one token.  So it is inefficient when sending multiple tokens to the same contract (a deck of game cards for instance).  ReceiveNft primarily exists just to maintain CW-721 compliance.
+# Receiver Interface
+When the SNIP-721 contract executes [SendNft](#SendNft) and [BatchSendNft](#BatchSendNft) messages, it must perform a callback to the receiving contract's receiver interface if the contract had registered its code hash using [RegisterReceiveNft](#registerreceivenft).  [BatchReceiveNft](#batchreceivenft) is preferred over [ReceiveNft](#receivenft), because ReceiveNft does not allow the recipient to know who sent the token, only its previous owner, and ReceiveNft can only process one token.  So it is inefficient when sending multiple tokens to the same contract (a deck of game cards for instance).  ReceiveNft primarily exists just to maintain CW-721 compliance.
 
 <a name="cwsender"></a>Also, it should be noted that the CW-721 `sender` field is inaccurately named, because it is used to hold the address the token came from, not the address that sent it (which is not always the same).  The name is reluctantly kept in [ReceiveNft](#receivenft) to maintain CW-721 compliance, but [BatchReceiveNft](#batchreceivenft) uses `sender` to hold the sending address (which matches both its true role and its SNIP-20 Receive counterpart).  Any contract that is implementing both Receiver Interfaces must be sure that the ReceiveNft `sender` field is actually processed like a BatchReceiveNft `from` field.  Again, apologies for any confusion caused by propagating inaccuracies, but because [InterNFT](https://internft.org) is planning on using CW-721 standards, compliance with CW-721 might be necessary.
 
-## <a name="receivenft"></a>ReceiveNft
+## ReceiveNft
 ReceiveNft may be a HandleMsg variant of any contract that wants to implement a receiver interface.  [BatchReceiveNft](#batchreceivenft), which is more informative and more efficient, is preferred over ReceiveNft.  
 ```
 {
@@ -1096,7 +1175,7 @@ ReceiveNft may be a HandleMsg variant of any contract that wants to implement a 
 | token_id | string                         | ID of the sent token                                                                                   | no       |                  |
 | msg      | string (base64 encoded Binary) | Msg used to control receiving logic                                                                    | yes      | nothing          |
 
-## <a name="batchreceivenft"></a>BatchReceiveNft
+## BatchReceiveNft
 BatchReceiveNft may be a HandleMsg variant of any contract that wants to implement a receiver interface.  BatchReceiveNft, which is more informative and more efficient, is preferred over [ReceiveNft](#receivenft).
 ```
 {
@@ -1393,7 +1472,7 @@ BatchMintNft mints a list of tokens.
 ```
 The IDs of the minted tokens should also be returned in a LogAttribute with the key `minted`.
 
-#### <a name="mint"></a>Mint
+#### Mint
 The Mint object defines the data necessary to mint one token.
 ```
 {
@@ -1457,7 +1536,7 @@ BatchTransferNft is used to perform multiple token transfers.  The message sende
 }
 ```
 
-#### <a name="transfer"></a>Transfer
+#### Transfer
 The Transfer object provides a list of tokens to transfer to one `recipient` address, as well as an optional `memo` that would be included with every logged token transfer.
 ```
 {
@@ -1474,7 +1553,7 @@ The Transfer object provides a list of tokens to transfer to one `recipient` add
 | token_ids | array of string    | List of token IDs to transfer to the `recipient`                                                                                    | no       |                  |
 | memo      | string             | `memo` for the transfer transactions that is only viewable by addresses involved in the transfer (recipient, sender, previous owner)| yes      | nothing          |
 
-### <a name="batchsend"></a>BatchSendNft
+### BatchSendNft
 BatchSendNft is used to perform multiple token transfers, and then call the recipient contracts' [BatchReceiveNft](#batchreceivenft) (or [ReceiveNft](#receivenft)) if they have registered their receiver interface with the NFT contract.  The message sender may specify a list of tokens to send to one recipient address in each [Send](#send) object, and any `memo` or `msg` provided must be applied to every token transferred in that one `Send` object.  If the list of transferred tokens belonged to multiple previous owners, a separate BatchReceiveNft callback must be performed for each of the previous owners.  If the contract only implements ReceiveNft, one ReceiveNft must be performed for every sent token.  Therefore it is highly recommended to implement BatchReceiveNft if there is the possibility of being sent multiple tokens at one time.  This will significantly reduce gas costs.  
 
 The message sender may provide multiple [Send](#send) objects to perform sends to multiple addresses, providing a different `memo` and `msg` for each address if desired.  Each individual transfer of a token must show separately in transaction histories.  The message sender must have permission to transfer all the tokens listed (either by being the owner or being granted transfer approval) and every token ID must be valid.  Any token that is transferred to a new owner must have its single-token approvals cleared.
@@ -1515,8 +1594,8 @@ If any BatchReceiveNft (or ReceiveNft) callback fails, the entire transaction mu
 }
 ```
 
-#### <a name="send"></a>Send
-The Send object provides a list of tokens to transfer to one recipient address, as well as an optional `memo` that would be included with every logged token transfer, and an optional `msg` that would be included with every [BatchReceiveNft](#batchreceivenft) or [ReceiveNft](#receivenft) callback made as a result of this Send object.  While Send keeps the `contract` field name in order be consistent with CW-721 specification, Secret Network does not have the same limitations as Cosmos, and it is possible to use [BatchSendNft](#batchsend) to transfer token ownership to a personal address (not a contract) or to a contract that does not implement any [Receiver Interface](#receiver).
+#### Send
+The Send object provides a list of tokens to transfer to one recipient address, as well as an optional `memo` that would be included with every logged token transfer, and an optional `msg` that would be included with every [BatchReceiveNft](#batchreceivenft) or [ReceiveNft](#receivenft) callback made as a result of this Send object.  While Send keeps the `contract` field name in order be consistent with CW-721 specification, Secret Network does not have the same limitations as Cosmos, and it is possible to use [BatchSendNft](#BatchSendNft) to transfer token ownership to a personal address (not a contract) or to a contract that does not implement any [Receiver Interface](#receiver-interface).
 ```
 {
 	"contract": "address_receiving_the_tokens",
@@ -1603,7 +1682,7 @@ BatchBurnNft is used to burn multiple tokens.  The message sender may specify a 
 }
 ```
 
-#### <a name="burn"></a>Burn
+#### Burn
 The Burn object provides a list of tokens to burn, as well as an optional `memo` that would be included with every token burn transaction history.
 ```
 {
@@ -1619,11 +1698,11 @@ The Burn object provides a list of tokens to burn, as well as an optional `memo`
 | memo      | string          | `memo` for the burn txs that is only viewable by addresses involved in the burn (message sender and previous owner if different) | yes      | nothing          |
 
 ## Making the Owner and/or Private Metadata Public
-A SNIP-721 contract may wish to allow an owner to make a token's owner and/or its private metadata public.  It may also choose to allow an address to make all their tokens' owner and/or private metadata public.  The [reference implementation](https://github.com/baedrik/snip721-reference-impl) does this using the same convention as [SetWhitelistedApproval](#setwhitelisted).
+A SNIP-721 contract may wish to allow an owner to make a token's owner and/or its private metadata public.  It may also choose to allow an address to make all their tokens' owner and/or private metadata public.  The [reference implementation](https://github.com/baedrik/snip721-reference-impl) does this using the same convention as [SetWhitelistedApproval](#SetWhitelistedApproval).
 
 ## Message
 
-### <a name="setglobal"></a>SetGlobalApproval
+### SetGlobalApproval
 The owner of a token can use SetGlobalApproval to make ownership and/or private metadata viewable by everyone.  This can be set for a single token or for an owner's entire inventory of tokens by choosing the appropriate [AccessLevel](#accesslevel).  SetGlobalApproval can also be used to revoke any global approval previously granted.
 
 ##### Request
@@ -1660,7 +1739,7 @@ The [reference implementation](https://github.com/baedrik/snip721-reference-impl
 
 ## Message
 
-### <a name="reveal"></a>Reveal
+### Reveal
 Reveal unwraps the sealed private metadata, irreversibly marking the token as unwrapped.
 
 ##### Request
@@ -1720,7 +1799,7 @@ A SNIP-721 contract may wish to provide a query for contracts to use to verify t
 
 ## Query
 
-### <a name="verifyapproval"></a> VerifyTransferApproval
+### VerifyTransferApproval
 VerifyTransferApproval will verify that the specified address has approval to transfer the entire provided list of tokens.  As explained [above](#queryblockinfo), queries may experience a delay in revealing expired approvals, so it is possible that a transfer attempt will still fail even after being verified by VerifyTransferApproval.  If the address does not have transfer approval on all the tokens, the response will indicate the first token encountered that can not be transferred by the address.
 
 ##### Request
