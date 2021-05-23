@@ -8,7 +8,7 @@ This specification is split into multiple sections, a contract may only implemen
 * [Introduction](#Introduction)
 * [Base](#Base)
     
-    messages
+    Messages
     * [TransferNft](#transfernft)
     * [SendNft](#sendnft)
     * [Approve](#approve)
