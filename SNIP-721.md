@@ -6,7 +6,6 @@ The [SNIP-721 reference implementation](https://github.com/baedrik/snip721-refer
 This specification is split into multiple sections, a contract may only implement some of this functionality, but must implement the base functionality.
 
 * [Introduction](#Introduction)
-    * [Introduction](#Introduction)
 * [Base](#Base)
     
     messages
