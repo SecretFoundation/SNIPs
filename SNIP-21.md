@@ -19,7 +19,7 @@ accounts easier (provided a viewing key, of course!).
 
 The existing `Transfer`, `TransferFrom`, `Send`, `SendFrom`,
 `Burn`, `Mint`, and `BurnFrom` messages MAY
-also accept a `memo` field, which is just a regular JSON string. This memo
+also accept a `memo` field, which is just a regular string. This memo
 SHOULD be saved in the transaction history of the balances involved in the
 transaction (`from`, `sender`, and `receiver`) and served as the `memo` field
 of items in the responses to the `TransferHistory` and `TransactionHistory`
@@ -70,6 +70,31 @@ Example `TransferHistory` response:
 When sending a `Receive` callback as part of a `Send` or `SendFrom` transaction,
 The `Receive` message SHOULD contain the same `memo` that was supplied in the
 original message.
+
+For example sending this `Send` message:
+```json
+{
+  "send": {
+    "recipient": "secret1xyz",
+    "amount": "123000000",
+    "msg": "some base64 data here",
+    "memo": "My super secret memo"
+  }
+}
+```
+
+would send this callback to the recipient contract:
+```json
+{
+  "receive": {
+    "sender": "secret1xyz",
+    "from": "secret1xyz",
+    "amount": "123000000",
+    "msg": "some base64 data here",
+    "memo": "My super secret memo"
+  }
+}
+```
 
 ## Transfer History
 
