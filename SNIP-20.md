@@ -1,4 +1,4 @@
-# WIP - SNIP-20 Spec: Private, Fungible Tokens
+# SNIP-20 Spec: Private, Fungible Tokens
 SNIP-20, is a specification for private fungible tokens based on
 CosmWasm on the Secret Network. The name and design is loosely based on
 Ethereum's [ERC-20](https://eips.ethereum.org/EIPS/eip-20) &
@@ -12,6 +12,57 @@ some of this functionality, but must implement the base functionality.
 
 Contracts that implement this interface SHOULD support only a single
 token/symbol, and MUST conform to the standards set in this memo.
+
+* [Introduction](#Introduction)
+* [Sections](#Sections)
+    * [Base](#Base)
+    
+        Messages:
+        * [Transfer](#Transfer)
+        * [Send](#Send)
+        * [RegisterReceive](#RegisterReceive)
+        * [CreateViewingKey](#CreateViewingKey)
+        * [SetViewingKey](#SetViewingKey)
+  
+        Queries:
+        * [Balance](#Balance)
+        * [TokenInfo](#TokenInfo)
+        * [TransferHistory](#TransferHistory)
+    
+    * [Allowances](#Allowances)
+        
+        Messages:
+        * [IncreaseAllowance](#IncreaseAllowance)
+        * [DecreaseAllowance](#DecreaseAllowance)
+        * [TransferFrom](#TransferFrom)
+        * [SendFrom](#SendFrom)
+        
+        Queries:
+        * [Allowance](#Allowance)
+    
+    * [Mintable](#Mintable)
+        
+        Messages:
+        * [Mint](#Mint)
+        * [SetMinters](#SetMinters)
+        * [Burn](#Burn)
+        * [BurnFrom](#BurnFrom)
+        
+        Queries:
+        * [Minters](#Minters)
+    
+    * [Native](#Native)
+    
+        Messages:
+        * [Deposit](#Deposit)
+        * [Redeem](#Redeem)
+        
+        Queries:
+        * [ExchangeRate](#ExchangeRate)
+
+* [Receiver interface](#Receiver-interface)
+
+# Introduction
 
 ## Scope
 This document aims to set standard interfaces that SNIP-20 contract
@@ -592,7 +643,7 @@ This function should be available when a contract supports both the
 
 ### Queries
 
-#### Minters (Authenticated)
+#### Minters
 Returns the list of minters that have been configured in the contract.
 
 ##### Request
