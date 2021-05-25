@@ -377,7 +377,7 @@ approval can be used (by time).
 ```
 
 #### DecreaseAllowance
-Decrease or clear the allowance by a sent amount. This may optionally come with
+Decrease or clear the allowance by a set amount. This may optionally come with
 an expiration time, which if set limits when the approval can be used. If amount
 is equal or greater than the current allowance, this action MUST set the
 allowance to zero, and return a `"success"` response.
