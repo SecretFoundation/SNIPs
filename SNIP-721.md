@@ -44,8 +44,7 @@ This specification is split into multiple sections, a contract may only implemen
         * [AddMinters](#addminters)
         * [RemoveMinters](#removeminters)
         * [SetMinters](#setminters)
-        * [SetPublicMetadata](#setpublicmetadata)
-        * [SetPrivateMetadata](#setprivatemetadata)
+        * [SetMetadata](#setmetadata)
 
         Queries
         * [Minters](#minters)
@@ -1040,10 +1039,12 @@ TransactionHistory displays an optionally paginated list of transactions (mint, 
 ```
 {
 	"transaction_history": {
+		"total": 99,
 		"txs": [
 			{
 				"tx_id": 9999,
-				"blockheight": 999999,
+				"block_height": 999999,
+				"block_time": 1610000012,
 				"token_id": "token_involved_in_the_tx",
 				"action": {
 					"transfer": {
@@ -1056,7 +1057,8 @@ TransactionHistory displays an optionally paginated list of transactions (mint, 
 			},
 			{
 				"tx_id": 9998,
-				"blockheight": 999998,
+				"block_height": 999998,
+				"block_time": 1610000006,
 				"token_id": "token_involved_in_the_tx",
 				"action": {
 					"mint": {
@@ -1068,7 +1070,8 @@ TransactionHistory displays an optionally paginated list of transactions (mint, 
 			},
 			{
 				"tx_id": 9997,
-				"blockheight": 999997,
+				"block_height": 999997,
+				"block_time": 1610000000,
 				"token_id": "token_involved_in_the_tx",
 				"action": {
 					"burn": {
@@ -1085,28 +1088,31 @@ TransactionHistory displays an optionally paginated list of transactions (mint, 
 	}
 }
 ```
-| Name | Type                           | Description                                                                            | Optional | 
-|------|--------------------------------|----------------------------------------------------------------------------------------|----------|
-| txs  | array of [Tx (see below)](#tx) | list of transactions in reverse chronological order that involve the specified address | no       |
+| Name  | Type                           | Description                                                                            | Optional | 
+|-------|--------------------------------|----------------------------------------------------------------------------------------|----------|
+| total | number (u64)                   | The total number of transactions that involve the specified address                    | no       |
+| txs   | array of [Tx (see below)](#tx) | List of transactions in reverse chronological order that involve the specified address | no       |
 
 #### Tx
 The Tx object contains all the information pertaining to a [mint](#txmint), [burn](#txburn), or [transfer](#txxfer) transaction.
 ```
 {
 	"tx_id": 9999,
-	"blockheight": 999999,
+	"block_height": 999999,
+	"block_time": 1610000000,
 	"token_id": "token_involved_in_the_tx",
 	"action": { TxAction::Transfer | TxAction::Mint | TxAction::Burn },
 	"memo": "optional_memo_for_the_tx"
 }
 ```
-| Name        | Type                              | Description                                                                               | Optional | 
-|-------------|-----------------------------------|-------------------------------------------------------------------------------------------|----------|
-| tx_id       | number (u64)                      | The transaction identifier                                                                | no       |
-| blockheight | number (u64)                      | The number of the block that contains the transaction                                     | no       |
-| token_id    | string                            | The token involved in the transaction                                                     | no       |
-| action      | [TxAction (see below)](#txaction) | The type of transaction and the information specific to that type                         | no       |
-| memo        | string                            | `memo` for the transaction that is only viewable by addresses involved in the transaction | yes      |
+| Name         | Type                              | Description                                                                               | Optional | 
+|--------------|-----------------------------------|-------------------------------------------------------------------------------------------|----------|
+| tx_id        | number (u64)                      | The transaction identifier                                                                | no       |
+| block_height | number (u64)                      | The number of the block that contains the transaction                                     | no       |
+| block_time   | number (u64)                      | The time in seconds since 01/01/1970 of the block that contains the transaction           | no       |
+| token_id     | string                            | The token involved in the transaction                                                     | no       |
+| action       | [TxAction (see below)](#txaction) | The type of transaction and the information specific to that type                         | no       |
+| memo         | string                            | `memo` for the transaction that is only viewable by addresses involved in the transaction | yes      |
 
 #### TxAction
 The TxAction object defines the type of transaction and holds the information specific to that type.
@@ -1329,47 +1335,20 @@ SetMinters must precisely define the list of authorized minters.  This should on
 }
 ```
 
-### SetPublicMetadata
-SetPublicMetadata will set the public metadata to the input metadata.  The SNIP-721 contract may want to limit which addresses have the authority to alter the public metadata.  See [here](https://github.com/baedrik/snip721-reference-impl/blob/master/README.md#setpublic) for a description of which addresses are given authority to alter public metadata in the [reference implementation](https://github.com/baedrik/snip721-reference-impl)
+### SetMetadata
+SetMetadata will set the public and/or private metadata to the corresponding input.  The SNIP-721 contract may want to limit which addresses have the authority to alter the metadata.  See [here](https://github.com/baedrik/snip721-reference-impl/blob/master/README.md#setmetadata) for a description of which addresses are given authority to alter metadata in the [reference implementation](https://github.com/baedrik/snip721-reference-impl)
 
 ##### Request
 ```
 {
-	"set_public_metadata": {
+	"set_metadata": {
 		"token_id": "ID_of_token_whose_metadata_should_be_updated",
-		"metadata": {
+		"public_metadata": {
 			"name": "optional_public_name",
 			"description": "optional_public_text_description",
 			"image": "optional_public_uri_pointing_to_an_image_or_additional_off-chain_metadata"
 		},
-		"padding": "optional_ignored_string_that_can_be_used_to_maintain_constant_message_length"
-	}
-}
-```
-| Name     | Type                                 | Description                                                            | Optional | Value If Omitted |
-|----------|--------------------------------------|------------------------------------------------------------------------|----------|------------------|
-| token_id | string                               | ID of the token whose metadata should be updated                       | no       |                  |
-| metadata | [Metadata (see above)](#metadata)    | The new public metadata for the token                                  | no       |                  |
-| padding  | string                               | An ignored string that can be used to maintain constant message length | yes      | nothing          |
-
-##### Response
-```
-{
-	"set_public_metadata": {
-		"status": "success"
-	}
-}
-```
-
-### SetPrivateMetadata
-SetPrivateMetadata will set the private metadata to the input metadata.  The SNIP-721 contract may want to limit which addresses have the authority to alter the private metadata.  See [here](https://github.com/baedrik/snip721-reference-impl/blob/master/README.md#setprivate) for a description of which addresses are given authority to alter private metadata in the [reference implementation](https://github.com/baedrik/snip721-reference-impl)
-
-##### Request
-```
-{
-	"set_private_metadata": {
-		"token_id": "ID_of_token_whose_metadata_should_be_updated",
-		"metadata": {
+		"private_metadata": {
 			"name": "optional_private_name",
 			"description": "optional_private_text_description",
 			"image": "optional_private_uri_pointing_to_an_image_or_additional_off-chain_metadata"
@@ -1378,16 +1357,17 @@ SetPrivateMetadata will set the private metadata to the input metadata.  The SNI
 	}
 }
 ```
-| Name     | Type                                 | Description                                                            | Optional | Value If Omitted |
-|----------|--------------------------------------|------------------------------------------------------------------------|----------|------------------|
-| token_id | string                               | ID of the token whose metadata should be updated                       | no       |                  |
-| metadata | [Metadata (see above)](#metadata)    | The new private metadata for the token                                 | no       |                  |
-| padding  | string                               | An ignored string that can be used to maintain constant message length | yes      | nothing          |
+| Name             | Type                                 | Description                                                            | Optional | Value If Omitted |
+|------------------|--------------------------------------|------------------------------------------------------------------------|----------|------------------|
+| token_id         | string                               | ID of the token whose metadata should be updated                       | no       |                  |
+| public_metadata  | [Metadata (see above)](#metadata)    | The new public metadata for the token                                  | yes      | nothing          |
+| private_metadata | [Metadata (see above)](#metadata)    | The new private metadata for the token                                 | yes      | nothing          |
+| padding          | string                               | An ignored string that can be used to maintain constant message length | yes      | nothing          |
 
 ##### Response
 ```
 {
-	"set_private_metadata": {
+	"set_metadata": {
 		"status": "success"
 	}
 }
