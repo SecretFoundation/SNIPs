@@ -23,7 +23,6 @@ This specification is split into multiple sections, a contract may only implemen
     Queries
     * [ContractInfo](#contractinfo)
     * [NumTokens](#numtokens)
-    * [AllTokens](#alltokens)
     * [OwnerOf](#ownerof)
     * [NftInfo](#nftinfo)
     * [AllNftInfo](#allnftinfo)
@@ -37,10 +36,16 @@ This specification is split into multiple sections, a contract may only implemen
 
 * [Receiver Interface](#Receiver-Interface)
 * [Optional Functionality](#Optional-Functionality)
+	* [Token Supply](#token-supply)
+
+		Queries
+    	* [AllTokens](#alltokens)
+
     * [Minting and Modifying Tokens](#minting-and-modifying-tokens)
 
         Messages
         * [MintNft](#mintnft)
+		* [MintNftClones](#mintnftclones)
         * [AddMinters](#addminters)
         * [RemoveMinters](#removeminters)
         * [SetMinters](#setminters)
@@ -49,6 +54,14 @@ This specification is split into multiple sections, a contract may only implemen
         Queries
         * [Minters](#minters)
     
+	* [Royalties](#royalties)
+
+		Messages
+		* [SetRoyaltyInfo](#setroyaltyinfo)
+		
+		Queries
+		* [RoyaltyInfo](#royaltyquery)
+
     * [Batch Processing](#batch-processing)
 
         Messages
@@ -496,42 +509,6 @@ The ViewerInfo object provides the address and viewing key of the querier.  It i
 | address     | string (HumanAddr) | Address performing the query                                                                                          | no       |                  |
 | viewing_key | string             | The querying address' viewing key                                                                                     | no       |                  |
 
-### AllTokens
-AllTokens returns an optionally paginated, lexicographically ordered list of all the token IDs controlled by the contract.  If the contract's token supply is private, the SNIP-721 contract may choose to only allow an authenticated minter's address to perform this query.  When paginating, supply the last token ID received in a response as the `start_after` string of the next query to continue listing where the previous query stopped.
-
-##### Request
-```
-{
-	"all_tokens": {
-		"viewer": {
-			"address": "address_of_the_querier_if_supplying_optional_ViewerInfo",
-			"viewing_key": "viewer's_key_if_supplying_optional_ViewerInfo"
-		},
-		"start_after": "optional_string_where_results_will_only_be_token_IDs_that_come_later_in_lexicographical_order",
-		"limit": 10
-	}
-}
-```
-| Name        | Type                                  | Description                                                                              | Optional | Value If Omitted       |
-|-------------|---------------------------------------|------------------------------------------------------------------------------------------|----------|------------------------|
-| viewer      | [ViewerInfo (see above)](#viewerinfo) | The address and viewing key performing this query                                        | yes      | nothing                |
-| start_after | string                                | Results must only list token IDs that come after this string in lexicographical order    | yes      | nothing                |
-| limit       | number (u32)                          | Number of token IDs to return                                                            | yes      | developer's discretion |
-
-##### Response
-```
-{
-	"token_list": {
-		"tokens": [
-			"list", "of", "token", "IDs", "controlled", "by", "the", "contract", "..."
-		]
-	}
-}
-```
-| Name    | Type            | Description                                                          | Optional | 
-|---------|-----------------|----------------------------------------------------------------------|----------|
-| tokens  | array of string | A list of token IDs controlled by this contract                      | no       |
-
 ### OwnerOf
 OwnerOf returns the owner of the specified token if the querier is the owner or has been granted permission to view the owner.  If the querier is the owner, OwnerOf must also display all the addresses that have been given transfer permission.  The transfer approval list is provided as part of CW-721 compliance; however, the token owner is advised to use [NftDossier (see below)](#nftdossier) for a more complete list that includes view_owner and view_private_metadata approvals (which CW-721 is not capable of keeping private).  If no [viewer](#viewerinfo) is provided, OwnerOf must only display the owner if ownership is public for this token.
 
@@ -744,7 +721,7 @@ PrivateMetadata returns the private [metadata](#metadata) of a token if the quer
 | image       | string | Private uri to an image or additional metadata                   | yes      |
 
 ### NftDossier
-NftDossier returns all the information about a token that the viewer is permitted to view.  If no [viewer](#viewerinfo) is provided, NftDossier must only display the information that has been made public.  The response may include the owner, the public metadata, the private metadata, the reason the private metadata is not viewable, whether ownership is public, whether the private metadata is public, and (if the querier is the owner,) the approvals for this token as well as the inventory-wide approvals for the owner.
+NftDossier returns all the information about a token that the viewer is permitted to view.  If no [viewer](#viewerinfo) is provided, NftDossier will only display the information that has been made public.  The response may include the owner, the public metadata, the private metadata, the reason the private metadata is not viewable, the royalty information, the mint run information, whether ownership is public, whether the private metadata is public, and (if the querier is the owner,) the approvals for this token as well as the inventory-wide approvals for the owner.
 
 ##### Request
 ```
@@ -781,6 +758,26 @@ NftDossier returns all the information about a token that the viewer is permitte
 			"image": "optional_private_uri_containing_an_image_or_additional_metadata"
 		},
 		"display_private_metadata_error": "optional_error_describing_why_private_metadata_is_not_viewable_if_applicable",
+		"royalty_info": {
+			"decimal_places_in_rates": 4,
+			"royalties": [
+				{
+					"recipient": "address_that_should_be_paid_this_royalty",
+					"rate": 100,
+				},
+				{
+					"...": "..."
+				}
+			],
+		},
+		"mint_run_info": {
+			"collection_creator": "optional_address_that_instantiated_this_contract",
+			"token_creator": "optional_address_that_minted_this_token",
+			"time_of_minting": 999999,
+			"mint_run": 3,
+			"serial_number": 67,
+			"quantity_minted_this_run": 1000,
+		},
 		"owner_is_public": true | false,
 		"public_ownership_expiration": "never" | {"at_height": 999999} | {"at_time":999999},
 		"private_metadata_is_public": true | false,
@@ -810,18 +807,77 @@ NftDossier returns all the information about a token that the viewer is permitte
 	}
 }
 ```
-| Name                                  | Type                                                     | Description                                                                            | Optional | 
-|---------------------------------------|----------------------------------------------------------|----------------------------------------------------------------------------------------|----------|
-| owner                                 | string (HumanAddr)                                       | Address of the token's owner                                                           | yes      |
-| public_metadata                       | [Metadata (see above)](#metadata)                        | The token's public metadata                                                            | yes      |
-| private_metadata                      | [Metadata (see above)](#metadata)                        | The token's private metadata                                                           | yes      |
-| display_private_metadata_error        | string                                                   | If the private metadata is not displayed, the corresponding error message              | yes      |
-| owner_is_public                       | bool                                                     | True if ownership is public for this token                                             | no       |
-| public_ownership_expiration           | [Expiration (see above)](#expiration)                    | When public ownership expires for this token.  Can be a blockheight, time, or never    | yes      |
-| private_metadata_is_public            | bool                                                     | True if private metadata is public for this token                                      | no       |
-| private_metadata_is_public_expiration | [Expiration (see above)](#expiration)                    | When public display of private metadata expires.  Can be a blockheight, time, or never | yes      |
-| token_approvals                       | array of [Snip721Approval (see below)](#Snip721Approval) | List of approvals for this token                                                       | yes      |
-| inventory_approvals                   | array of [Snip721Approval (see below)](#Snip721Approval) | List of inventory-wide approvals for the token's owner                                 | yes      |
+| Name                                  | Type                                                  | Description                                                                            | Optional | 
+|---------------------------------------|-------------------------------------------------------|----------------------------------------------------------------------------------------|----------|
+| owner                                 | string (HumanAddr)                                    | Address of the token's owner                                                           | yes      |
+| public_metadata                       | [Metadata (see above)](#metadata)                     | The token's public metadata                                                            | yes      |
+| private_metadata                      | [Metadata (see above)](#metadata)                     | The token's private metadata                                                           | yes      |
+| display_private_metadata_error        | string                                                | If the private metadata is not displayed, the corresponding error message              | yes      |
+| royalty_info                          | [RoyaltyInfo (see below)](#royaltyinfo)               | The token's RoyaltyInfo                                                                | yes      |
+| mint_run_info                         | [MintRunInfo (see below)](#mintruninfo)               | The token's MintRunInfo                                                                | yes      |
+| owner_is_public                       | bool                                                  | True if ownership is public for this token                                             | no       |
+| public_ownership_expiration           | [Expiration (see above)](#expiration)                 | When public ownership expires for this token.  Can be a blockheight, time, or never    | yes      |
+| private_metadata_is_public            | bool                                                  | True if private metadata is public for this token                                      | no       |
+| private_metadata_is_public_expiration | [Expiration (see above)](#expiration)                 | When public display of private metadata expires.  Can be a blockheight, time, or never | yes      |
+| token_approvals                       | array of [Snip721Approval (see below)](#snipapproval) | List of approvals for this token                                                       | yes      |
+| inventory_approvals                   | array of [Snip721Approval (see below)](#snipapproval) | List of inventory-wide approvals for the token's owner                                 | yes      |
+
+#### RoyaltyInfo
+RoyaltyInfo is used to define royalties to be paid when a token is sold.
+```
+{
+	"decimal_places_in_rates": 4,
+	"royalties": [
+		{
+			"recipient": "address_that_should_be_paid_this_royalty",
+			"rate": 100,
+		},
+		{
+			"...": "..."
+		}
+	]
+}
+```
+| Name                    | Type                                     | Description                                                                                         | Optional |
+|-------------------------|------------------------------------------|-----------------------------------------------------------------------------------------------------|----------|
+| decimal_places_in_rates | number (u8)                              | The number of decimal places used for all rates in `royalties` (e.g. 2 decimals for whole percents) | no       |
+| royalties               | array of [Royalty (see below)](#royalty) | List of royalties to be paid upon sale                                                              | no       |
+
+#### Royalty
+Royalty defines a payment address and a royalty rate to be paid when an NFT is sold.
+```
+{
+	"recipient": "address_that_should_be_paid_this_royalty",
+	"rate": 100,
+}
+```
+| Name      | Type               | Description                                                                                                        | Optional |
+|-----------|--------------------|--------------------------------------------------------------------------------------------------------------------|----------|
+| recipient | string (HumanAddr) | The address that should be paid this royalty                                                                       | no       |
+| rate      | number (u16)       | The royalty rate to be paid using the number of decimals specified in the `RoyaltyInfo` containing this `Royalty`  | no       |
+
+#### MintRunInfo
+MintRunInfo contains information aout the minting of this token.
+```
+{
+	"collection_creator": "optional_address_that_instantiated_this_contract",
+	"token_creator": "optional_address_that_minted_this_token",
+	"time_of_minting": 999999,
+	"mint_run": 3,
+	"serial_number": 67,
+	"quantity_minted_this_run": 1000,
+}
+```
+| Name                     | Type               | Description                                                                                 | Optional | 
+|--------------------------|--------------------|---------------------------------------------------------------------------------------------|----------|
+| collection_creator       | string (HumanAddr) | The address that instantiated this contract                                                 | yes      |
+| token_creator            | string (HumanAddr) | The address that minted this token                                                          | yes      |
+| time_of_minting          | number (u64)       | The number of seconds since 01/01/1970 that this token was minted                           | yes      |
+| mint_run                 | number (u32)       | The mint run this token was minted in.  This is analogous to book printing editions         | yes      |
+| serial_number            | number (u32)       | The serial number of this token                                                             | yes      |
+| quantity_minted_this_run | number (u32)       | The number of tokens minted in this mint run.                                               | yes      |
+
+The combination of mint_run, serial_number, and quantity_minted_this_run is used to indicate, for example, that this token was number 67 of 1000 minted in mint run number 3.
 
 #### Snip721Approval
 The Snip721Approval object is used to display all the approvals (and their expirations) that have been granted to a whitelisted address.  The expiration field must be null if the whitelisted address does not have that corresponding permission type.
@@ -1202,7 +1258,47 @@ BatchReceiveNft may be a HandleMsg variant of any contract that wants to impleme
 | msg       | string (base64 encoded Binary) | Msg used to control receiving logic                                                                                      | yes      | nothing          |
 
 # Optional Functionality
-These messages and queries are not mandatory for SNIP-721 compliance; however, they are considered useful enough to be included in the [SNIP-721 reference implementation](https://github.com/baedrik/snip721-reference-impl).  As such, the SNIP-721 toolkit package (TODO add link), includes functions to call these messages and queries, and SNIP-721 contract developers may wish to implement them.
+These messages and queries are not mandatory for SNIP-721 compliance; however, they are considered useful enough to be included in the [SNIP-721 reference implementation](https://github.com/baedrik/snip721-reference-impl).  As such, the [SNIP-721 toolkit package](https://github.com/enigmampc/secret-toolkit/tree/master/packages/snip721) includes functions to call these messages and queries, and SNIP-721 contract developers may wish to implement them.
+
+## Token Supply
+
+## Query
+
+### AllTokens
+AllTokens returns an optionally paginated, lexicographically ordered list of all the token IDs controlled by the contract.  If the contract's token supply is private, the SNIP-721 contract may choose to only allow an authenticated minter's address to perform this query.  When paginating, supply the last token ID received in a response as the `start_after` string of the next query to continue listing where the previous query stopped.
+
+##### Request
+```
+{
+	"all_tokens": {
+		"viewer": {
+			"address": "address_of_the_querier_if_supplying_optional_ViewerInfo",
+			"viewing_key": "viewer's_key_if_supplying_optional_ViewerInfo"
+		},
+		"start_after": "optional_string_where_results_will_only_be_token_IDs_that_come_later_in_lexicographical_order",
+		"limit": 10
+	}
+}
+```
+| Name        | Type                                  | Description                                                                              | Optional | Value If Omitted       |
+|-------------|---------------------------------------|------------------------------------------------------------------------------------------|----------|------------------------|
+| viewer      | [ViewerInfo (see above)](#viewerinfo) | The address and viewing key performing this query                                        | yes      | nothing                |
+| start_after | string                                | Results must only list token IDs that come after this string in lexicographical order    | yes      | nothing                |
+| limit       | number (u32)                          | Number of token IDs to return                                                            | yes      | developer's discretion |
+
+##### Response
+```
+{
+	"token_list": {
+		"tokens": [
+			"list", "of", "token", "IDs", "controlled", "by", "the", "contract", "..."
+		]
+	}
+}
+```
+| Name    | Type            | Description                                                          | Optional | 
+|---------|-----------------|----------------------------------------------------------------------|----------|
+| tokens  | array of string | A list of token IDs controlled by this contract                      | no       |
 
 ## Minting and Modifying Tokens
 
@@ -1227,19 +1323,40 @@ MintNft mints a single token.
 			"description": "optional_private_text_description",
 			"image": "optional_private_uri_pointing_to_an_image_or_additional_off-chain_metadata"
 		},
+		"serial_number": {
+			"mint_run": 3,
+			"serial_number": 67,
+			"quantity_minted_this_run": 1000,
+		},
+		"royalty_info": {
+			"decimal_places_in_rates": 4,
+			"royalties": [
+				{
+					"recipient": "address_that_should_be_paid_this_royalty",
+					"rate": 100,
+				},
+				{
+					"...": "..."
+				}
+			],
+		},
 		"memo": "optional_memo_for_the_mint_tx",
 		"padding": "optional_ignored_string_that_can_be_used_to_maintain_constant_message_length"
 	}
 }
 ```
-| Name             | Type                                   | Description                                                                                   | Optional | Value If Omitted     |
-|------------------|----------------------------------------|-----------------------------------------------------------------------------------------------|----------|----------------------|
-| token_id         | string                                 | Identifier for the token to be minted                                                         | yes      | minting order number |
-| owner            | string (HumanAddr)                     | Address of the owner of the minted token                                                      | yes      | env.message.sender   |
-| public_metadata  | [Metadata (see above)](#metadata)      | The metadata that is publicly viewable                                                        | yes      | nothing              |
-| private_metadata | [Metadata (see above)](#metadata)      | The metadata that is viewable only by the token owner and addresses the owner has whitelisted | yes      | nothing              |
-| memo             | string                                 | `memo` for the mint tx that is only viewable by addresses involved in the mint (minter, owner)| yes      | nothing              |
-| padding          | string                                 | An ignored string that can be used to maintain constant message length                        | yes      | nothing              |
+| Name             | Type                                      | Description                                                                                   | Optional | Value If Omitted     |
+|------------------|-------------------------------------------|-----------------------------------------------------------------------------------------------|----------|----------------------|
+| token_id         | string                                    | Identifier for the token to be minted                                                         | yes      | minting order number |
+| owner            | string (HumanAddr)                        | Address of the owner of the minted token                                                      | yes      | env.message.sender   |
+| public_metadata  | [Metadata (see above)](#metadata)         | The metadata that is publicly viewable                                                        | yes      | nothing              |
+| private_metadata | [Metadata (see above)](#metadata)         | The metadata that is viewable only by the token owner and addresses the owner has whitelisted | yes      | nothing              |
+| serial_number    | [SerialNumber (see below)](#serialnumber) | The SerialNumber for this token                                                               | yes      | nothing              |
+| royalty_info     | [RoyaltyInfo (see above)](#royaltyinfo)   | RoyaltyInfo for this token                                                                    | yes      | default RoyaltyInfo  |
+| memo             | string                                    | `memo` for the mint tx that is only viewable by addresses involved in the mint (minter, owner)| yes      | nothing              |
+| padding          | string                                    | An ignored string that can be used to maintain constant message length                        | yes      | nothing              |
+
+See [here](#setroyaltyinfo) for an explanation of the default RoyaltyInfo.
 
 ##### Response
 ```
@@ -1250,6 +1367,84 @@ MintNft mints a single token.
 }
 ```
 The ID of the minted token should also be returned in a LogAttribute with the key `minted`.
+
+#### SerialNumber
+SerialNumber is used to serialize identical NFTs.
+```
+{
+	"mint_run": 3,
+	"serial_number": 67,
+	"quantity_minted_this_run": 1000,
+}
+```
+| Name                     | Type         | Description                                                                                         | Optional | Value If Omitted     |
+|--------------------------|--------------|-----------------------------------------------------------------------------------------------------|----------|----------------------|
+| mint_run                 | number (u32) | The mint run this token was minted in.  This is analogous to book printing editions                 | yes      | nothing              |
+| serial_number            | number (u32) | The serial number of this token                                                                     | no       |                      |
+| quantity_minted_this_run | number (u32) | The number of tokens minted in this mint run.                                                       | yes      | nothing              |
+
+The combination of the above data is used to indicate, for example, that this token was number 67 of 1000 minted in mint run number 3.
+
+### MintNftClones
+MintNftClones mints copies of an NFT, giving each one a [MintRunInfo](#mintruninfo) that indicates its serial number and the number of identical NFTs minted with it.  If the optional `mint_run_id` is provided, the contract will also indicate which mint run these tokens were minted in, where the first use of the `mint_run_id` will be mint run number 1, the second time MintNftClones is called with that `mint_run_id` will be mint run number 2, etc...  If no `mint_run_id` is provided, the MintRunInfo will not include a `mint_run`.
+
+##### Request
+```
+{
+	"mint_nft_clones": {
+		"mint_run_id": "optional_ID_used_to_track_mint_run_numbers_over_multiple_calls",
+		"quantity": 100,
+		"owner": "optional_address_the_new_tokens_will_be_minted_to",
+		"public_metadata": {
+			"name": "optional_public_name",
+			"description": "optional_public_text_description",
+			"image": "optional_public_uri_pointing_to_an_image_or_additional_off-chain_metadata"
+		},
+		"private_metadata": {
+			"name": "optional_private_name",
+			"description": "optional_private_text_description",
+			"image": "optional_private_uri_pointing_to_an_image_or_additional_off-chain_metadata"
+		},
+		"royalty_info": {
+			"decimal_places_in_rates": 4,
+			"royalties": [
+				{
+					"recipient": "address_that_should_be_paid_this_royalty",
+					"rate": 100,
+				},
+				{
+					"...": "..."
+				}
+			],
+		},
+		"memo": "optional_memo_for_the_mint_tx",
+		"padding": "optional_ignored_string_that_can_be_used_to_maintain_constant_message_length"
+	}
+}
+```
+| Name             | Type                                    | Description                                                                                              | Optional | Value If Omitted    |
+|------------------|-----------------------------------------|----------------------------------------------------------------------------------------------------------|----------|---------------------|
+| mint_run_id      | string                                  | Identifier used to track the number of mint runs these clones have had over multiple MintNftClones calls | yes      | nothing             |
+| quantity         | number (u32)                            | Number of clones to mint in this run                                                                     | no       |                     |
+| owner            | string (HumanAddr)                      | Address of the owner of the minted tokens                                                                | yes      | env.message.sender  |
+| public_metadata  | [Metadata (see above)](#metadata)       | The metadata that is publicly viewable                                                                   | yes      | nothing             |
+| private_metadata | [Metadata (see above)](#metadata)       | The metadata that is viewable only by the token owner and addresses the owner has whitelisted            | yes      | nothing             |
+| royalty_info     | [RoyaltyInfo (see above)](#royaltyinfo) | RoyaltyInfo for these tokens                                                                             | yes      | default RoyaltyInfo |
+| memo             | string                                  | `memo` for the mint tx that is only viewable by addresses involved in the mint (minter, owner)           | yes      | nothing             |
+| padding          | string                                  | An ignored string that can be used to maintain constant message length                                   | yes      | nothing             |
+
+See [here](#setroyaltyinfo) for an explanation of the default RoyaltyInfo.
+
+##### Response
+```
+{
+	"mint_nft_clones": {
+		"first_minted": "token_id_of_the_first_minted_token",
+		"last_minted": "token_id_of_the_last_minted_token"
+	}
+}
+```
+The IDs of the minted tokens will also be returned in LogAttributes with the keys `first_minted` and `last_minted`.  Because the token IDs are sequential in the [reference implementation](https://github.com/baedrik/snip721-reference-impl), the IDs of the other minted tokens are easily inferred.
 
 ### AddMinters
 AddMinters must add the provided addresses to the list of authorized minters.  This should only be callable by an admin address.
@@ -1398,6 +1593,91 @@ Minters returns the list of addresses that are authorized to mint tokens.  This 
 |---------|-----------------------------|------------------------------------------|----------|
 | minters | array of string (HumanAddr) | List of addresses with minting authority | no       |
 
+## Royalties
+Royalties may be used to send residual payments to specified addresses when tokens are sold.
+
+## Messages
+
+### SetRoyaltyInfo
+A SNIP-721 contract may follow the example of the [reference implementation](https://github.com/baedrik/snip721-reference-impl) and implement a default RoyaltyInfo for the contract.  The contract's default RoyaltyInfo is the RoyaltyInfo that will be assigned to any token that is minted without explicitly defining its own RoyaltyInfo.  It should be noted that the default RoyaltyInfo only applies to new tokens minted while the default is in effect, and will not alter the royalties for any existing tokens.  This is because a token creator should not be able to sell a token with only 1% advertised royalty, and then change it to 100% once it is purchased.
+
+If a token_id is supplied, SetRoyaltyInfo will update the specified token's RoyaltyInfo to the input.  If no RoyaltyInfo is provided, it will delete the RoyaltyInfo and replace it with the contract's default RoyaltyInfo (if there is one).  If no token_id is provided, SetRoyaltyInfo will update the contract's default RoyaltyInfo to the input, or delete it if no RoyaltyInfo is provided.<br />
+Only an authorized minter may update the contract's default RoyaltyInfo.<br />
+Only a token's creator may update its RoyaltyInfo, and only if they are also the current owner.  Again, this is to avoid an unwelcome surprise that the royalties that were in place at the time of purchase have drastically increased by the time of re-sale.
+
+##### Request
+```
+{
+	"set_royalty_info": {
+		"token_id": "optional_ID_of_token_whose_royalty_info_should_be_updated",
+		"royalty_info": {
+			"decimal_places_in_rates": 4,
+			"royalties": [
+				{
+					"recipient": "address_that_should_be_paid_this_royalty",
+					"rate": 100,
+				},
+				{
+					"...": "..."
+				}
+			],
+		},
+		"padding": "optional_ignored_string_that_can_be_used_to_maintain_constant_message_length"
+	}
+}
+```
+| Name         | Type                                    | Description                                                            | Optional | Value If Omitted |
+|--------------|-----------------------------------------|------------------------------------------------------------------------|----------|------------------|
+| token_id     | string                                  | Optional ID of the token whose RoyaltyInfo should be updated           | yes      | see above        |
+| royalty_info | [RoyaltyInfo (see above)](#royaltyinfo) | The new RoyaltyInfo                                                    | yes      | see above        |
+| padding      | string                                  | An ignored string that can be used to maintain constant message length | yes      | nothing          |
+
+##### Response
+```
+{
+	"set_royalty_info": {
+		"status": "success"
+	}
+}
+```
+## Query
+
+### <a name="royaltyquery"></a>RoyaltyInfo (query)
+If a `token_id` is provided in the request, RoyaltyInfo returns the royalty information for that token.  If no `token_id` is requested, RoyaltyInfo displays the [default royalty information](#setroyaltyinfo) for the contract.
+
+##### Request
+```
+{
+	"royalty_info": {
+		"token_id": "optional_ID_of_the_token_being_queried",
+	}
+}
+```
+| Name            | Type                                  | Description                                                           | Optional | Value If Omitted                     |
+|-----------------|---------------------------------------|-----------------------------------------------------------------------|----------|--------------------------------------|
+| token_id        | string                                | ID of the token being queried                                         | yes      | query contract's default RoyaltyInfo |
+
+##### Response
+```
+{
+	"royalty_info": {
+		"decimal_places_in_rates": 4,
+		"royalties": [
+			{
+				"recipient": "address_that_should_be_paid_this_royalty",
+				"rate": 100,
+			},
+			{
+				"...": "..."
+			}
+		],
+	}
+}
+```
+| Name         | Type                                    | Description                                                                            | Optional | 
+|--------------|-----------------------------------------|----------------------------------------------------------------------------------------|----------|
+| royalty_info | [RoyaltyInfo (see above)](#royaltyinfo) | The token or default RoyaltyInfo as per the request                                    | yes      |
+
 ## Batch Processing
 These messages are used to process multiple token transactions in a single Cosmos message.  By avoiding the overhead of creating an additional Cosmos message for every token, an application can save 70k-80k gas per additional token processed.  This may be particularly useful in gaming applications where entire decks of "cards" are being processed.
 
@@ -1423,6 +1703,23 @@ BatchMintNft mints a list of tokens.
 					"name": "optional_private_name",
 					"description": "optional_private_text_description",
 					"image": "optional_private_uri_pointing_to_an_image_or_additional_off-chain_metadata"
+				},
+				"serial_number": {
+					"mint_run": 3,
+					"serial_number": 67,
+					"quantity_minted_this_run": 1000,
+				},
+				"royalty_info": {
+					"decimal_places_in_rates": 4,
+					"royalties": [
+						{
+							"recipient": "address_that_should_be_paid_this_royalty",
+							"rate": 100,
+						},
+						{
+							"...": "..."
+						}
+					],
 				},
 				"memo": "optional_memo_for_the_mint_tx"
 			},
@@ -1467,16 +1764,37 @@ The Mint object defines the data necessary to mint one token.
 		"description": "optional_private_text_description",
 		"image": "optional_private_uri_pointing_to_an_image_or_additional_off-chain_metadata"
 	},
+	"serial_number": {
+		"mint_run": 3,
+		"serial_number": 67,
+		"quantity_minted_this_run": 1000,
+	},
+	"royalty_info": {
+		"decimal_places_in_rates": 4,
+		"royalties": [
+			{
+				"recipient": "address_that_should_be_paid_this_royalty",
+				"rate": 100,
+			},
+			{
+				"...": "..."
+			}
+		],
+	},
 	"memo": "optional_memo_for_the_mint_tx"
 }
 ```
-| Name             | Type                                 | Description                                                                                        | Optional | Value If Omitted     |
-|------------------|--------------------------------------|----------------------------------------------------------------------------------------------------|----------|----------------------|
-| token_id         | string                               | Identifier for the token to be minted                                                              | yes      | minting order number |
-| owner            | string (HumanAddr)                   | Address of the owner of the minted token                                                           | yes      | env.message.sender   |
-| public_metadata  | [Metadata (see above)](#metadata)    | The metadata that is publicly viewable                                                             | yes      | nothing              |
-| private_metadata | [Metadata (see above)](#metadata)    | The metadata that is viewable only by the token owner and addresses the owner has whitelisted      | yes      | nothing              |
-| memo             | string                               | `memo` for the mint tx that is only viewable by addresses involved in the mint (minter, owner)     | yes      | nothing              |
+| Name             | Type                                      | Description                                                                                    | Optional | Value If Omitted     |
+|------------------|-------------------------------------------|------------------------------------------------------------------------------------------------|----------|----------------------|
+| token_id         | string                                    | Identifier for the token to be minted                                                          | yes      | minting order number |
+| owner            | string (HumanAddr)                        | Address of the owner of the minted token                                                       | yes      | env.message.sender   |
+| public_metadata  | [Metadata (see above)](#metadata)         | The metadata that is publicly viewable                                                         | yes      | nothing              |
+| private_metadata | [Metadata (see above)](#metadata)         | The metadata that is viewable only by the token owner and addresses the owner has whitelisted  | yes      | nothing              |
+| serial_number    | [SerialNumber (see above)](#serialnumber) | The SerialNumber for this token                                                                | yes      | nothing              |
+| royalty_info     | [RoyaltyInfo (see above)](#royaltyinfo)   | RoyaltyInfo for this token                                                                     | yes      | default RoyaltyInfo  |
+| memo             | string                                    | `memo` for the mint tx that is only viewable by addresses involved in the mint (minter, owner) | yes      | nothing              |
+
+See [here](#setroyaltyinfo) for an explanation of the default RoyaltyInfo.
 
 ### BatchTransferNft
 BatchTransferNft is used to perform multiple token transfers.  The message sender may specify a list of tokens to transfer to one `recipient` address in each [Transfer](#transfer) object, and any `memo` provided must be applied to every token transferred in that one `Transfer` object.  The message sender may provide multiple `Transfer` objects to perform transfers to multiple addresses, providing a different `memo` for each address if desired.  Each individual transfer of a token must show separately in transaction histories.  The message sender must have permission to transfer all the tokens listed (either by being the owner or being granted transfer approval) and every listed `token_id` must be valid.  Any token that is transferred to a new owner must have its single-token approvals cleared.
