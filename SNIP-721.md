@@ -1258,7 +1258,7 @@ BatchReceiveNft may be a HandleMsg variant of any contract that wants to impleme
 | msg       | string (base64 encoded Binary) | Msg used to control receiving logic                                                                                      | yes      | nothing          |
 
 # Optional Functionality
-These messages and queries are not mandatory for SNIP-721 compliance; however, they are considered useful enough to be included in the [SNIP-721 reference implementation](https://github.com/baedrik/snip721-reference-impl).  As such, the SNIP-721 toolkit package (TODO add link), includes functions to call these messages and queries, and SNIP-721 contract developers may wish to implement them.
+These messages and queries are not mandatory for SNIP-721 compliance; however, they are considered useful enough to be included in the [SNIP-721 reference implementation](https://github.com/baedrik/snip721-reference-impl).  As such, the [SNIP-721 toolkit package](https://github.com/enigmampc/secret-toolkit/tree/master/packages/snip721) includes functions to call these messages and queries, and SNIP-721 contract developers may wish to implement them.
 
 ## Token Supply
 
