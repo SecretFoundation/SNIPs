@@ -1356,6 +1356,8 @@ MintNft mints a single token.
 | memo             | string                                    | `memo` for the mint tx that is only viewable by addresses involved in the mint (minter, owner)| yes      | nothing              |
 | padding          | string                                    | An ignored string that can be used to maintain constant message length                        | yes      | nothing              |
 
+See [here](#setroyaltyinfo) for an explanation of the default RoyaltyInfo.
+
 ##### Response
 ```
 {
@@ -1430,6 +1432,8 @@ MintNftClones mints copies of an NFT, giving each one a [MintRunInfo](#mintrunin
 | royalty_info     | [RoyaltyInfo (see above)](#royaltyinfo) | RoyaltyInfo for these tokens                                                                             | yes      | default RoyaltyInfo |
 | memo             | string                                  | `memo` for the mint tx that is only viewable by addresses involved in the mint (minter, owner)           | yes      | nothing             |
 | padding          | string                                  | An ignored string that can be used to maintain constant message length                                   | yes      | nothing             |
+
+See [here](#setroyaltyinfo) for an explanation of the default RoyaltyInfo.
 
 ##### Response
 ```
@@ -1639,7 +1643,7 @@ Only a token's creator may update its RoyaltyInfo, and only if they are also the
 ## Query
 
 ### <a name="royaltyquery"></a>RoyaltyInfo (query)
-If a `token_id` is provided in the request, RoyaltyInfo returns the royalty information for that token.  If no `token_id` is requested, RoyaltyInfo displays the default royalty information for the contract.
+If a `token_id` is provided in the request, RoyaltyInfo returns the royalty information for that token.  If no `token_id` is requested, RoyaltyInfo displays the [default royalty information](#setroyaltyinfo) for the contract.
 
 ##### Request
 ```
@@ -1789,6 +1793,8 @@ The Mint object defines the data necessary to mint one token.
 | serial_number    | [SerialNumber (see above)](#serialnumber) | The SerialNumber for this token                                                                | yes      | nothing              |
 | royalty_info     | [RoyaltyInfo (see above)](#royaltyinfo)   | RoyaltyInfo for this token                                                                     | yes      | default RoyaltyInfo  |
 | memo             | string                                    | `memo` for the mint tx that is only viewable by addresses involved in the mint (minter, owner) | yes      | nothing              |
+
+See [here](#setroyaltyinfo) for an explanation of the default RoyaltyInfo.
 
 ### BatchTransferNft
 BatchTransferNft is used to perform multiple token transfers.  The message sender may specify a list of tokens to transfer to one `recipient` address in each [Transfer](#transfer) object, and any `memo` provided must be applied to every token transferred in that one `Transfer` object.  The message sender may provide multiple `Transfer` objects to perform transfers to multiple addresses, providing a different `memo` for each address if desired.  Each individual transfer of a token must show separately in transaction histories.  The message sender must have permission to transfer all the tokens listed (either by being the owner or being granted transfer approval) and every listed `token_id` must be valid.  Any token that is transferred to a new owner must have its single-token approvals cleared.
