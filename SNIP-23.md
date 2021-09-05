@@ -15,27 +15,27 @@ Up until now, any contract wishing to be invoked (notified) upon receiving a SNI
 
 In practice, getting the SHA256 value of a contract from the chain is very easy, and implementing a contract that receives SNIP20 token transfers became a bit cumbersome, because of the added boilerplate code and the need to know in advance which tokens the contract should support.
 
-SNIP23 introduces an optional `recipient_code_hash` parameter in the `Send` and `SendFrom` operations, thus contracts are not required to "register" with the SNIP23 contract before receiving tokens.
+SNIP23 introduces an optional `recipient_code_hash` parameter in the `Send` and `SendFrom` operations.When `recipient_code_hash` is supplied, it takes precedent over the `recipient_code_hash` registered with the `RegisterReceiver` interface. This means that contracts are not required to "register" with the SNIP23 contract before receiving tokens. Sending a message without `recipient_code_hash` to an unregistered contract continues to behave the same.
 
 ### Updated `Send` interface
 
-| Name                | Type             | Description                                                                                           | optional |
-| ------------------- | ---------------- | ----------------------------------------------------------------------------------------------------- | -------- |
-| recipient           | string           | Accounts SHOULD be a valid bech32 address, but contracts may use a different naming scheme as well    | no       |
-| recipient_code_hash | string           | A lower-case SHA256 hash of the recipient contract's code. Must have 64 characters (No leading "0x"). | yes      |
-| amount              | string (Uint128) | The amount of tokens to send                                                                          | no       |
-| msg                 | string (base64)  | Base64 encoded message, which the recipient will receive                                              | yes      |
-| memo                | string           | A private message only the sender and recipient can see                                               | yes      |
-| padding             | string           | Ignored string used to maintain constant-length messages                                              | yes      |
+| Name                | Type             | Description                                                                                                                    | optional |
+| ------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| recipient           | string           | Accounts SHOULD be a valid bech32 address, but contracts may use a different naming scheme as well                             | no       |
+| recipient_code_hash | string           | The SHA256 hash of the recipient contract's code, encoded in lowercase hexadecimal with no leading "0x". (64 ASCII characters) | yes      |
+| amount              | string (Uint128) | The amount of tokens to send                                                                                                   | no       |
+| msg                 | string (base64)  | Base64 encoded message, which the recipient will receive                                                                       | yes      |
+| memo                | string           | A private message only the sender and recipient can see                                                                        | yes      |
+| padding             | string           | Ignored string used to maintain constant-length messages                                                                       | yes      |
 
 ### Updated `SendFrom` interface
 
-| Name                | Type             | Description                                                                                           | optional |
-| ------------------- | ---------------- | ----------------------------------------------------------------------------------------------------- | -------- |
-| owner               | string           | Account to take tokens **from**                                                                       | no       |
-| recipient           | string           | Account to send tokens **to**                                                                         | no       |
-| recipient_code_hash | string           | A lower-case SHA256 hash of the recipient contract's code. Must have 64 characters (No leading "0x"). | yes      |
-| amount              | string (Uint128) | Amount of tokens to transfer                                                                          | no       |
-| msg                 | string (base64)  | Base64 encoded message, which the recipient will receive                                              | yes      |
-| memo                | string           | A private message only the sender and recipient can see                                               | yes      |
-| padding             | string           | Ignored string used to maintain constant-length messages                                              | yes      |
+| Name                | Type             | Description                                                                                                                    | optional |
+| ------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| owner               | string           | Account to take tokens **from**                                                                                                | no       |
+| recipient           | string           | Account to send tokens **to**                                                                                                  | no       |
+| recipient_code_hash | string           | The SHA256 hash of the recipient contract's code, encoded in lowercase hexadecimal with no leading "0x". (64 ASCII characters) | yes      |
+| amount              | string (Uint128) | Amount of tokens to transfer                                                                                                   | no       |
+| msg                 | string (base64)  | Base64 encoded message, which the recipient will receive                                                                       | yes      |
+| memo                | string           | A private message only the sender and recipient can see                                                                        | yes      |
+| padding             | string           | Ignored string used to maintain constant-length messages                                                                       | yes      |
