@@ -4,10 +4,9 @@ This document describes an optional enhancement to the SNIP-20 spec. Contracts t
 
 The feature specified in this document is an improved UX for the `Send` and `SendFrom` operations, aimed at enriching SNIP20 tokens composability and usage.
 
-- [SNIP-23 - Improved UX to SNIP-20 Send Operations](#snip-23---improved-ux-to-snip-20-send-operations)
-  - [The optional `recipient_code_hash` parameter](#the-optional-recipient_code_hash-parameter)
-    - [Updated `Send` interface](#updated-send-interface)
-    - [Updated `SendFrom` interface](#updated-sendfrom-interface)
+- [The optional `recipient_code_hash` parameter](#the-optional-recipient_code_hash-parameter)
+  - [Updated `Send` interface](#updated-send-interface)
+  - [Updated `SendFrom` interface](#updated-sendfrom-interface)
 
 ## The optional `recipient_code_hash` parameter
 
