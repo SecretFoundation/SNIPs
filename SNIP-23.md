@@ -1,4 +1,4 @@
-# SNIP-21 - Improvements to Allowance in [SNIP-20](/SNIP-20.md)
+# SNIP-24 - Improvements to Allowance in [SNIP-20](/SNIP-20.md)
 
 This document describes several optional enhancements to the SNIP-20 spec.
 Contracts that support the existing SNIP-20 standard are still considered
