@@ -1034,7 +1034,7 @@ InventoryApprovals returns whether all the address' tokens have public ownership
 | inventory_approvals                   | array of [Snip721Approval (see above)](#Snip721Approval) | List of inventory-wide approvals for this address                                      | no       |
 
 ### Tokens
-Tokens displays an optionally paginated, lexicographically ordered list of all the token IDs that belong to the specified `owner`.  It must only display the owner's tokens on which the querier has view_owner permission.  If no viewing key is provided, it must only display the owner's tokens that have public ownership.  When paginating, supply the last token ID received in a response as the `start_after` string of the next query to continue listing where the previous query stopped.
+Tokens displays an optionally paginated list of all the token IDs that belong to the specified `owner`.  It must only display the owner's tokens on which the querier has view_owner permission.  If no viewing key is provided, it must only display the owner's tokens that have public ownership.  When paginating, supply the last token ID received in a response as the `start_after` string of the next query to continue listing where the previous query stopped.
 
 ##### Request
 ```
@@ -1043,7 +1043,7 @@ Tokens displays an optionally paginated, lexicographically ordered list of all t
 		"owner": "address_whose_inventory_is_being_queried",
 		"viewer": "address_of_the_querier_if_different_from_owner",
 		"viewing_key": "querier's_viewing_key"
-		"start_after": "optional_string_where_results_will_only_be_token_IDs_that_come_later_in_lexicographical_order",
+		"start_after": "optionally_display_only_token_ids_that_come_after_this_one_in_the_list",
 		"limit": 10
 	}
 }
@@ -1053,7 +1053,7 @@ Tokens displays an optionally paginated, lexicographically ordered list of all t
 | owner       | string (HumanAddr) | The address whose inventory is being queried                                             | no       |                        |
 | viewer      | string (HumanAddr) | The querier's address if different from the `owner`                                      | yes      | nothing                |
 | viewing_key | string             | The querier's viewing key                                                                | yes      | nothing                |
-| start_after | string             | Results must only list token IDs that come after this string in lexicographical order    | yes      | nothing                |
+| start_after | string             | Results will only list token IDs that come after this token ID in the list               | yes      | nothing                |
 | limit       | number (u32)       | Number of token IDs to return                                                            | yes      | developer's discretion |
 
 ##### Response
@@ -1265,7 +1265,7 @@ These messages and queries are not mandatory for SNIP-721 compliance; however, t
 ## Query
 
 ### AllTokens
-AllTokens returns an optionally paginated, lexicographically ordered list of all the token IDs controlled by the contract.  If the contract's token supply is private, the SNIP-721 contract may choose to only allow an authenticated minter's address to perform this query.  When paginating, supply the last token ID received in a response as the `start_after` string of the next query to continue listing where the previous query stopped.
+AllTokens returns an optionally paginated list of all the token IDs controlled by the contract.  If the contract's token supply is private, the SNIP-721 contract may choose to only allow an authenticated minter's address to perform this query.  When paginating, supply the last token ID received in a response as the `start_after` string of the next query to continue listing where the previous query stopped.
 
 ##### Request
 ```
@@ -1275,7 +1275,7 @@ AllTokens returns an optionally paginated, lexicographically ordered list of all
 			"address": "address_of_the_querier_if_supplying_optional_ViewerInfo",
 			"viewing_key": "viewer's_key_if_supplying_optional_ViewerInfo"
 		},
-		"start_after": "optional_string_where_results_will_only_be_token_IDs_that_come_later_in_lexicographical_order",
+		"start_after": "optionally_display_only_token_ids_that_come_after_this_one_in_the_list",
 		"limit": 10
 	}
 }
@@ -1283,7 +1283,7 @@ AllTokens returns an optionally paginated, lexicographically ordered list of all
 | Name        | Type                                  | Description                                                                              | Optional | Value If Omitted       |
 |-------------|---------------------------------------|------------------------------------------------------------------------------------------|----------|------------------------|
 | viewer      | [ViewerInfo (see above)](#viewerinfo) | The address and viewing key performing this query                                        | yes      | nothing                |
-| start_after | string                                | Results must only list token IDs that come after this string in lexicographical order    | yes      | nothing                |
+| start_after | string                                | Results will only list token IDs that come after this token ID in the list               | yes      | nothing                |
 | limit       | number (u32)                          | Number of token IDs to return                                                            | yes      | developer's discretion |
 
 ##### Response
