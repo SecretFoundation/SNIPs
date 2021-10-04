@@ -615,19 +615,22 @@ NftInfo returns the public [metadata](#metadata) of a token.  All metadata field
 | image       | string | Uri to an image or additional metadata                   | yes      |
 
 #### Metadata
-Metadata for a token that follows CW-721 metadata specification, which is based on ERC721 Metadata JSON Schema.
+This is the metadata for a token that follows CW-721 metadata specification, which is based on ERC721 Metadata JSON Schema.
 ```
 {
-	"name": "optional_name",
-	"description": "optional_text_description",
-	"image": "optional_uri_pointing_to_an_image_or_additional_off-chain_metadata"
+	"token_uri": "optional_uri_pointing_to_off-chain_JSON_metadata",
+	"extension": {
+		"...": "..."
+	}
 }
 ```
-| Name        | Type   | Description                                                           | Optional | Value If Omitted     |
-|-------------|--------|-----------------------------------------------------------------------|----------|----------------------|
-| name        | string | String that can be used to identify an asset's name                   | yes      | nothing              |
-| description | string | String that can be used to describe an asset                          | yes      | nothing              |
-| image       | string | String that can hold a link to additional off-chain metadata or image | yes      | nothing              |
+| Name      | Type                                | Description                                                                          | Optional | Value If Omitted     |
+|-----------|-------------------------------------|--------------------------------------------------------------------------------------|----------|----------------------|
+| token_uri | string                              | Uri pointing to off-chain JSON metadata                                              | yes      | nothing              |
+| extension | [Extension (see below)](#extension) | Data structure defining on-chain metadata                                            | yes      | nothing              |
+
+#### Extension
+Extension can be any data structure representing token metadata that is stored on-chain.  See [here](https://github.com/baedrik/snip721-reference-impl/blob/master/README.md#extension) for the description of the Extension that the reference implementation uses.
 
 ### AllNftInfo
 AllNftInfo displays the result of both [OwnerOf](#ownerof) and [NftInfo](#nftinfo) in a single query.  This is provided for CW-721 compliance, but for more complete information about a token, use [NftDossier](#nftdossier), which will include private metadata and view_owner and view_private_metadata approvals if the querier is permitted to view this information.
