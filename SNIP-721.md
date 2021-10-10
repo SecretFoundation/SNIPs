@@ -848,7 +848,7 @@ NftDossier returns all the information about a token that the viewer is permitte
 | inventory_approvals                   | array of [Snip721Approval (see below)](#snipapproval) | List of inventory-wide approvals for the token's owner                                 | yes      |
 
 #### RoyaltyInfo
-RoyaltyInfo is used to define royalties to be paid when a token is sold.  Royalty recipient addresses are optional in query responses because an implementation may choose to restrict who can view royalty recipient addresses.
+RoyaltyInfo is used to define royalties to be paid when a token is sold.  Royalty recipient addresses are optional in query responses because an implementation may choose to restrict who can view royalty recipient addresses.  See [here](https://github.com/baedrik/snip721-reference-impl/blob/master/README.md#royaltyinfo) for a description of how the reference implementation determines who is permitted to view royalty recipient addresses.
 ```
 {
 	"decimal_places_in_rates": 4,
@@ -869,7 +869,7 @@ RoyaltyInfo is used to define royalties to be paid when a token is sold.  Royalt
 | royalties               | array of [Royalty (see below)](#royalty) | List of royalties to be paid upon sale                                                              | no       |
 
 #### Royalty
-Royalty defines a payment address and a royalty rate to be paid when an NFT is sold.  Royalty recipient addresses are optional in query responses because an implementation may choose to restrict who can view royalty recipient addresses.
+Royalty defines a payment address and a royalty rate to be paid when an NFT is sold.  Royalty recipient addresses are optional in query responses because an implementation may choose to restrict who can view royalty recipient addresses.  See [here](https://github.com/baedrik/snip721-reference-impl/blob/master/README.md#royalty) for a description of how the reference implementation determines who is permitted to view royalty recipient addresses.
 ```
 {
 	"recipient": "address_that_should_be_paid_this_royalty_(optional_in_query_responses)",
@@ -1674,7 +1674,7 @@ Only a token's creator may update its RoyaltyInfo, and only if they are also the
 ## Query
 
 ### <a name="royaltyquery"></a>RoyaltyInfo (query)
-If a `token_id` is provided in the request, RoyaltyInfo returns the royalty information for that token.  If no `token_id` is requested, RoyaltyInfo displays the [default royalty information](#setroyaltyinfo) for the contract.  The implementation may choose to hide royalty recipient addresses.  See [here](https://github.com/baedrik/snip721-reference-impl/blob/master/README.md#nftdossier) for a description of how the reference implementation determines who is permitted to view royalty recipient addresses.
+If a `token_id` is provided in the request, RoyaltyInfo returns the royalty information for that token.  If no `token_id` is requested, RoyaltyInfo displays the [default royalty information](#setroyaltyinfo) for the contract.  The implementation may choose to hide royalty recipient addresses.  See [here](https://github.com/baedrik/snip721-reference-impl/blob/master/README.md#royaltyquery) for a description of how the reference implementation determines who is permitted to view royalty recipient addresses.
 
 ##### Request
 ```
