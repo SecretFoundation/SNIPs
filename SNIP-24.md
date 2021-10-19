@@ -46,13 +46,15 @@ Viewing keys are passwords meant to validate users at times when the blockchain 
 3. Later on, a query is sent to the contract `query("balance",alice,password)`
    - If `(alice,password)` matches what's in storage, the contract returns Alice's balance to the querier.
 
-The main disadvantage of this method is that Alice must send a transaction before she can query her balance. This is bad UX for users new to Secret Network - Also because they have to pay SCRT gas to get a basic peice of information, but esspecialy when traffic is high and nodes lag behind, queried nodes might have the `query("balance")` answer but can't authnticate the querier because the nodes still didn't caught up with the `set_viewing_key()` transaction.
+The main disadvantage of this method is that Alice must send a transaction before she can query her balance. This is bad UX for users new to Secret Network - Also because they have to pay SCRT gas to get a basic peice of information, but esspecialy when traffic is high and nodes lag behind, queried nodes might have the `query("balance")` answer but can't authnticate the querier because the node still didn't caught up with the `set_viewing_key()` transaction.
 
 ### Query Permits
 
-Query permits are an alternative way of authenticating the querier. Instead of storing a password in the contract's state, the users signs a piece of data with their private keys, and then sends this data and the signature to the contract along with the query. The contrat then validates the signature against the data, and if it checks out returns an answer.
+Query permits are an alternative way of authenticating the querier. Instead of storing a password in the contract's state, the users signs a piece of data with their private keys, and then sends this data and the signature to the contract along with the query. The contract then validates the signature against the data, and returns an answer if the signature is validated.
 
 This way users don't have to send a transaction before they can access their data.
+
+Also note that the querier doesn't send the account's address to the contract, as the contract derives it from the public key attached to the signature.
 
 ## Data Structures
 
