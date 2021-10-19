@@ -89,7 +89,7 @@ type StdSignDoc struct {
 | `Msgs`          | an array with only one message of the type `PermitMsg`              |
 | `Sequence`      | must be `0`                                                         |
 
-Note that `ChainID` can be just a freeform string, but Keplr enforces that it's the current chain-id. The contract doesn't care about chain-id and it just checks that the signature is correct, so in theory a user can sign a permit on chain-id `secret-3` and send it later on on chain-id `secret-4` and it will be approved (and that's okay!).
+Note that `ChainID` can be just a freeform string, but Keplr enforces that it's the current chain-id. The contract doesn't care about chain-id and it just checks that the signature is correct. In practice a user can sign a permit on chain-id `secret-3` and later on send it on chain-id `secret-4` and it will be validated correctly (and that's okay!).
 
 #### `PermitMsg`
 
