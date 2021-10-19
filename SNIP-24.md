@@ -2,27 +2,28 @@
 
 This document describes a querying method for SNIP-20 tokens that is superior to using viewing keys. Contracts that support the existing SNIP-20 standard are still considered compliant, and clients should be written to benefit from these features when available, but provide fallback for when these features are not available.
 
-The feature specified in this document is an improved UX for the `Allowance`, `Balance`, `TransferHistory` & `TransactionHistory` queries, aimed at enriching SNIP20 tokens usage and onset for new users.
+The feature specified in this document is an improved UX for the `Allowance`, `Balance`, `TransferHistory` & `TransactionHistory` queries, aimed at enriching SNIP-20 (and SNIP-721) tokens usage and onset for new users.
 
 - [SNIP-24 - Query permits for SNIP-20 tokens](#snip-24---query-permits-for-snip-20-tokens)
   - [Rationale](#rationale)
     - [The Problem with Viewing Keys](#the-problem-with-viewing-keys)
     - [Query Permits](#query-permits)
   - [Data Structures](#data-structures)
-    - [`StdSignDoc`](#stdsigndoc)
+    - [Permit content - `StdSignDoc`](#permit-content---stdsigndoc)
       - [`PermitMsg`](#permitmsg)
       - [Full Example](#full-example)
     - [Signature](#signature)
   - [Messages](#messages)
     - [RevokePermit](#revokepermit)
       - [Request](#request)
+        - [Response](#response)
   - [Queries](#queries)
     - [WithPermit](#withpermit)
       - [Allowance](#allowance)
       - [Balance](#balance)
       - [TransferHistory](#transferhistory)
       - [TransactionHistory](#transactionhistory)
-  - [Usage examples](#usage-examples)
+  - [Client Usage Examples](#client-usage-examples)
     - [Keplr](#keplr)
     - [secretcli](#secretcli)
 
@@ -49,9 +50,9 @@ This way users don't have to send a transaction before they can access their dat
 
 The data structure for query permits was choosen to accomodate existing tools in the ecosystem, namley Keplr & secretcli which already know how to sign this and don't require extra code and support.
 
-### `StdSignDoc`
+### Permit content - `StdSignDoc`
 
-The entire data being signed is a cosmos-sdk `StdSignDoc` with some constraints.
+The data being signed is a cosmos-sdk `StdSignDoc` with some constraints.
 
 ```go
 // StdSignDoc is replay-prevention structure.
@@ -133,9 +134,24 @@ type StdSignDoc struct {
 
 ### Signature
 
-```json
+Signature is a JSON object that looks like this:
 
+```json
+{
+  "pub_key": {
+    "type": "tendermint/PubKeySecp256k1",
+    "value": "<33 bytes secp256k1 pubkey as base64>"
+  },
+  "signature": "<64 bytes of secp256k1 signature as base64>"
+}
 ```
+
+It's the output of `window.keplr.signAmino()` & `secretcli tx sign-doc`, and represents a signature on the permit's content with the secp256k1 private key of the account.
+
+Reference implementations for how to create this signature:
+
+- [secretcli](https://github.com/enigmampc/cosmos-sdk/blob/217cc79f3c0583e09222b1e9602a5544f1c66af8/x/auth/client/cli/tx_sign_doc.go#L111-L132)
+- [Keplr](https://github.com/chainapsis/keplr-extension/blob/494cd1eba646db8a129be227d277e037778ecd17/packages/background/src/keyring/service.ts#L290-L300)
 
 ## Messages
 
@@ -149,6 +165,16 @@ A way for users to revoke permits that they signed in the past.
 | ---- | ------ | ---------------------- | -------- |
 | name | string | The name of the permit | no       |
 
+##### Response
+
+```json
+{
+  "revoke_permit": {
+    "status": "success"
+  }
+}
+```
+
 ## Queries
 
 ### WithPermit
@@ -161,7 +187,7 @@ A way for users to revoke permits that they signed in the past.
 
 #### TransactionHistory
 
-## Usage examples
+## Client Usage Examples
 
 ### Keplr
 
@@ -194,8 +220,8 @@ const { signature } = await window.keplr.signAmino(
     memo: "", // Must be empty
   },
   {
-    preferNoSetFee: true,
-    preferNoSetMemo: true,
+    preferNoSetFee: true, // Fee must be 0, so hide it from the user
+    preferNoSetMemo: true, // Memo must be empty, so hide it from the user
   }
 );
 
