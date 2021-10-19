@@ -99,7 +99,7 @@ Note that `ChainID` can be just a freeform string, but Keplr enforces that it's 
 {
   "type": "query_permit",
   "value": {
-    "permit_name": "freeform string",
+    "permit_name": "<freeform string>",
     "allowed_tokens": ["<address_token_1>", "<address_token_2>", "..."],
     "permissions": ["balance", "history", "allowance"]
   }
@@ -107,9 +107,9 @@ Note that `ChainID` can be just a freeform string, but Keplr enforces that it's 
 ```
 
 - `type` is always the string `query_permit`.
-- `value.permit_name` is a freeform string. The users can later revoke this permit using this name.
+- `value.permit_name` is a freeform string. The user can later revoke this permit using this name.
 - `value.allowed_tokens` is a list of token addresses to which this permit applies.
-- `value.permissions` is on of `balance`, `history` or `allowance`.
+- `value.permissions` is an array that may conatin `balance`, `history` and `allowance`.
   - `balance` - gives permission to query the `balance` of the permit signer.
   - `history` - gives permission to query the `transfer_history` and `transaction_history` of the permit signer.
   - `allowance` - gives permission to query the `allowance` of the permit signer as an `owner` ans as a `spender`.
@@ -146,13 +146,13 @@ Note that `ChainID` can be just a freeform string, but Keplr enforces that it's 
 
 ### Signature
 
-Signature is a JSON object that looks like this:
+Signature is a JSON object of this type:
 
 ```json
 {
   "pub_key": {
     "type": "tendermint/PubKeySecp256k1",
-    "value": "<33 bytes secp256k1 pubkey as base64>"
+    "value": "<33 bytes of secp256k1 pubkey as base64>"
   },
   "signature": "<64 bytes of secp256k1 signature as base64>"
 }
