@@ -20,9 +20,17 @@ The feature specified in this document is an improved UX for the `Allowance`, `B
   - [Queries](#queries)
     - [WithPermit](#withpermit)
       - [Allowance](#allowance)
+        - [Request](#request-1)
+        - [Response](#response-1)
       - [Balance](#balance)
+        - [Request](#request-2)
+        - [Response](#response-2)
       - [TransferHistory](#transferhistory)
+        - [Request](#request-3)
+        - [Response](#response-3)
       - [TransactionHistory](#transactionhistory)
+        - [Request](#request-4)
+        - [Response](#response-4)
   - [Client Usage Examples](#client-usage-examples)
     - [Keplr](#keplr)
     - [secretcli](#secretcli)
@@ -79,6 +87,8 @@ type StdSignDoc struct {
 | `Msgs`          | an array with only one message of the type `PermitMsg`              |
 | `Sequence`      | must be `0`                                                         |
 
+Note that `ChainID` can be just a freeform string, but Keplr enforces that it's the current chain-id. The contract doesn't care about chain-id and it just checks that the signature is correct, so in theory a user can sign a permit on chain-id `secret-3` and send it later on on chain-id `secret-4` and it will be approved (and that's okay!).
+
 #### `PermitMsg`
 
 `PermitMsg` is the only message allowed in `Msgs`.
@@ -88,7 +98,7 @@ type StdSignDoc struct {
   "type": "query_permit",
   "value": {
     "permit_name": "freeform string",
-    "allowed_tokens": ["<address_token_1>", "<address_token_2>"],
+    "allowed_tokens": ["<address_token_1>", "<address_token_2>", "..."],
     "permissions": ["balance", "history", "allowance"]
   }
 }
@@ -179,13 +189,172 @@ A way for users to revoke permits that they signed in the past.
 
 ### WithPermit
 
+`WithPermit` wraps all the queries that support permits.
+
+```json
+{
+  "with_permit": {
+    "query": {
+      "allowance/balance/transfer_history/transaction_history": { "...": "..." }
+    },
+    "permit": {
+      "params": {
+        "permit_name": "permitName",
+        "allowed_tokens": ["<address_token_1>", "<address_token_2>", "..."],
+        "chain_id": "chainId",
+        "permissions": ["balance", "history", "allowance"]
+      },
+      "signature": {
+        "pub_key": {
+          "type": "tendermint/PubKeySecp256k1",
+          "value": "<33 bytes secp256k1 pubkey as base64>"
+        },
+        "signature": "<64 bytes of secp256k1 signature as base64>"
+      }
+    }
+  }
+}
+```
+
 #### Allowance
+
+This returns the available allowance that spender can access from the owner's account, along with the expiration info.
+
+The `expiration` field of the response may be either `null` or unset if no expiration has been set.
+
+##### Request
+
+| Name                                | Type   | Description                                                       | optional |
+| ----------------------------------- | ------ | ----------------------------------------------------------------- | -------- |
+| with_permit.query.allowance.owner   | string | Account from which tokens are allowed to be taken                 | no       |
+| with_permit.query.allowance.spender | string | Account which is allowed to spend tokens on behalf of the _owner_ | no       |
+
+```json
+{
+  "allowance": { "owner": "<address>", "spender": "<address>" }
+}
+```
+
+##### Response
+
+```json
+{
+  "allowance": {
+    "spender": "<address>",
+    "owner": "<address>",
+    "allowance": "<current allowance>",
+    "expiration": 1234
+  }
+}
+```
 
 #### Balance
 
+Returns the balance of the given address. Returns "0" if the address is unknown to the contract.
+
+##### Request
+
+```json
+{
+  "balance": {}
+}
+```
+
+##### Response
+
+```json
+{
+  "balance": {
+    "amount": "123"
+  }
+}
+```
+
 #### TransferHistory
 
+See [SNIP20/TransferHistory](SNIP-20.md#Transfer-History) & [SNIP21/TransferHistory](SNIP-21.md#Transfer-History) for full description.
+
+##### Request
+
+| Name                                         | Type   | Description                                                                                                  | optional |
+| -------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------ | -------- |
+| with_permit.query.transfer_history.page_size | number | Number of transactions to return, starting from the latest. i.e. n=1 will return only the latest transaction | no       |
+| with_permit.query.transfer_history.page      | number | Defaults to 0. Specifying a positive number will skip `page * page_size` txs from the start.                 | yes      |
+
+```json
+{
+  "transfer_history": {
+    "page_size": 10,
+    "page": 0
+  }
+}
+```
+
+##### Response
+
+```json
+{
+  "transfer_history": {
+    "txs": [
+      {
+        "id": 123,
+        "from": "secret1xyz",
+        "sender": "secret1xyz",
+        "receiver": "secret1xyz",
+        "coins": {
+          "denom": "FOOBAR",
+          "amount": "123000000"
+        },
+        "block_time": 12006,
+        "block_height": 101
+      }
+    ]
+  }
+}
+```
+
 #### TransactionHistory
+
+See [SNIP21/TransactionHistory](SNIP-21.md#Transaction-History) for full description.
+
+##### Request
+
+| Name                                            | Type   | Description                                                                                                  | optional |
+| ----------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------ | -------- |
+| with_permit.query.transaction_history.page_size | number | Number of transactions to return, starting from the latest. i.e. n=1 will return only the latest transaction | no       |
+| with_permit.query.transaction_history.page      | number | Defaults to 0. Specifying a positive number will skip `page * page_size` txs from the start.                 | yes      |
+
+```json
+{
+  "transaction_history": {
+    "page_size": 10,
+    "page": 0
+  }
+}
+```
+
+##### Response
+
+```json
+{
+  "transaction_history": {
+    "total": 200,
+    "txs": [
+      {
+        "id": "optional ID",
+        "block_time": 12000,
+        "block_height": 100,
+        "coins": {
+          "denom": "coin denomination/name",
+          "amount": "Uint128"
+        },
+        "memo": "private message",
+        "action": {}
+      }
+    ]
+  }
+}
+```
 
 ## Client Usage Examples
 
