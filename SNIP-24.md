@@ -39,14 +39,14 @@ The feature specified in this document is an improved UX for the `Allowance`, `B
 
 ### The Problem with Viewing Keys
 
-Viewing keys are passwords meant to validate users at times when the blockchain cannot. Spesifically in queries, the query sender isn't authenticated and the contract doesn't know who is the querier. Therefore viewing keys were invented to provide a way of access control for users:
+Viewing keys are passwords meant to validate users at times when the blockchain cannot. Specifically in queries, the query sender isn't authenticated and the contract doesn't know who is the querier. Therefore viewing keys were invented to provide a way of access control for users:
 
 1. Alice sends a transaction `set_viewing_key(password)`
 2. The contract stores `(alice,password)`
 3. Later on, a query is sent to the contract `query("balance",alice,password)`
    - If `(alice,password)` matches what's in storage, the contract returns Alice's balance to the querier.
 
-The main disadvantage of this method is that Alice must send a transaction before she can query her balance. This is bad UX for users new to Secret Network - Also because they have to pay SCRT gas to get a basic peice of information, but esspecialy when traffic is high and nodes lag behind, queried nodes might have the `query("balance")` answer but can't authnticate the querier because the node still didn't caught up with the `set_viewing_key()` transaction.
+The main disadvantage of this method is that Alice must send a transaction before she can query her balance. This is bad UX for users new to Secret Network - Also because they have to pay SCRT gas to get a basic piece of information, but especially when traffic is high and nodes lag behind, queried nodes might have the `query("balance")` answer but can't authenticate the querier because the node still didn't catch up with the `set_viewing_key()` transaction.
 
 ### Query Permits
 
@@ -58,7 +58,7 @@ Also note that the querier doesn't send the account's address to the contract, a
 
 ## Data Structures
 
-The data structure for query permits was choosen to accomodate existing tools in the ecosystem, namley Keplr & secretcli which already know how to sign this and don't require extra code and support.
+The data structure for query permits was chosen to accommodate existing tools in the ecosystem, namely Keplr & secretcli which already know how to sign this and don't require extra code and support.
 
 ### Permit content - `StdSignDoc`
 
@@ -80,16 +80,16 @@ type StdSignDoc struct {
 }
 ```
 
-| Field           | Comment                                                             |
-| --------------- | ------------------------------------------------------------------- |
-| `AccountNumber` | must be `0`                                                         |
-| `ChainID`       | freeform, but when signing with Keplr must use the current chain-id |
-| `Fee`           | must be `0uscrt` with `1` gas                                       |
-| `Memo`          | must be an empty string                                             |
-| `Msgs`          | an array with only one message of the type `PermitMsg`              |
-| `Sequence`      | must be `0`                                                         |
+| Field           | Comment                                                              |
+| --------------- | -------------------------------------------------------------------- |
+| `AccountNumber` | must be `0`                                                          |
+| `ChainID`       | free-form, but when signing with Keplr must use the current chain-id |
+| `Fee`           | must be `0uscrt` with `1` gas                                        |
+| `Memo`          | must be an empty string                                              |
+| `Msgs`          | an array with only one message of the type `PermitMsg`               |
+| `Sequence`      | must be `0`                                                          |
 
-Note that `ChainID` can be just a freeform string, but Keplr enforces that it's the current chain-id. The contract doesn't care about chain-id and it just checks that the signature is correct. In practice a user can sign a permit on chain-id `secret-3` and later on send it on chain-id `secret-4` and it will be validated correctly (and that's okay!).
+Note that `ChainID` can be just a free-form string, but Keplr enforces that it's the current chain-id. The contract doesn't care about chain-id and it just checks that the signature is correct. In practice a user can sign a permit on chain-id `secret-3` and later on send it on chain-id `secret-4` and it will be validated correctly (and that's okay!).
 
 #### `PermitMsg`
 
@@ -99,7 +99,7 @@ Note that `ChainID` can be just a freeform string, but Keplr enforces that it's 
 {
   "type": "query_permit",
   "value": {
-    "permit_name": "<freeform string>",
+    "permit_name": "<free-form string>",
     "allowed_tokens": ["<address_token_1>", "<address_token_2>", "..."],
     "permissions": ["balance", "history", "allowance"]
   }
@@ -107,12 +107,12 @@ Note that `ChainID` can be just a freeform string, but Keplr enforces that it's 
 ```
 
 - `type` is always the string `query_permit`.
-- `value.permit_name` is a freeform string. The user can later revoke this permit using this name.
+- `value.permit_name` is a free-form string. The user can later revoke this permit using this name.
 - `value.allowed_tokens` is a list of token addresses to which this permit applies.
-- `value.permissions` is an array that may conatin `balance`, `history` and `allowance`.
+- `value.permissions` is an array that may contain `balance`, `history` and `allowance`.
   - `balance` - gives permission to query the `balance` of the permit signer.
   - `history` - gives permission to query the `transfer_history` and `transaction_history` of the permit signer.
-  - `allowance` - gives permission to query the `allowance` of the permit signer as an `owner` ans as a `spender`.
+  - `allowance` - gives permission to query the `allowance` of the permit signer as an `owner` and as a `spender`.
 
 #### Full Example
 
@@ -162,7 +162,7 @@ It's the output of `window.keplr.signAmino()` & `secretcli tx sign-doc`, and rep
 
 Reference implementations for how to create this signature:
 
-- [secretcli](https://github.com/enigmampc/cosmos-sdk/blob/217cc79f3c0583e09222b1e9602a5544f1c66af8/x/auth/client/cli/tx_sign_doc.go#L111-L132)
+- [secretcli](https://github.com/enigmampc/cosmos-sdk/blob/217cc79f3c0583e09222b1e9602a5544f1c66af8/x/auth/client/cli/tx_sign_doc.go#L122-L131)
 - [Keplr](https://github.com/chainapsis/keplr-extension/blob/494cd1eba646db8a129be227d277e037778ecd17/packages/background/src/keyring/service.ts#L290-L300)
 
 ## Messages
@@ -176,6 +176,14 @@ A way for users to revoke permits that they signed in the past.
 | Name | Type   | Description            | optional |
 | ---- | ------ | ---------------------- | -------- |
 | name | string | The name of the permit | no       |
+
+```json
+{
+  "revoke_permit": {
+    "name": "some name"
+  }
+}
+```
 
 ##### Response
 
@@ -201,15 +209,15 @@ A way for users to revoke permits that they signed in the past.
     },
     "permit": {
       "params": {
-        "permit_name": "permitName",
+        "permit_name": "<some name>",
         "allowed_tokens": ["<address_token_1>", "<address_token_2>", "..."],
-        "chain_id": "chainId",
+        "chain_id": "<some chain-id>",
         "permissions": ["balance", "history", "allowance"]
       },
       "signature": {
         "pub_key": {
           "type": "tendermint/PubKeySecp256k1",
-          "value": "<33 bytes secp256k1 pubkey as base64>"
+          "value": "<33 bytes of secp256k1 pubkey as base64>"
         },
         "signature": "<64 bytes of secp256k1 signature as base64>"
       }
