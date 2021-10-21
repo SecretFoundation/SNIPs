@@ -173,9 +173,10 @@ A way for users to revoke permits that they signed in the past.
 
 #### Request
 
-| Name | Type   | Description            | optional |
-| ---- | ------ | ---------------------- | -------- |
-| name | string | The name of the permit | no       |
+| Name    | Type   | Description                                              | optional |
+| ------- | ------ | -------------------------------------------------------- | -------- |
+| name    | string | The name of the permit                                   | no       |
+| padding | string | Ignored string used to maintain constant-length messages | yes      |
 
 ```json
 {
