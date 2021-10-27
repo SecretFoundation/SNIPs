@@ -283,7 +283,7 @@ Returns the balance of the given address. Returns "0" if the address is unknown 
 
 #### TransferHistory
 
-See [SNIP20/TransferHistory](SNIP-20.md#Transfer-History) & [SNIP21/TransferHistory](SNIP-21.md#Transfer-History) for full description.
+See [SNIP20/TransferHistory](SNIP-20.md#TransferHistory) & [SNIP21/TransferHistory](SNIP-21.md#Transfer-History) for full description.
 
 ##### Request
 
