@@ -33,7 +33,7 @@ The feature specified in this document is an improved UX for the `Allowance`, `B
         - [Response](#response-4)
   - [Client Usage Examples](#client-usage-examples)
     - [Keplr](#keplr)
-    - [secretcli](#secretcli)
+    - [secretd](#secretd)
 
 ## Rationale
 
@@ -58,7 +58,7 @@ Also note that the querier doesn't send the account's address to the contract, a
 
 ## Data Structures
 
-The data structure for query permits was chosen to accommodate existing tools in the ecosystem, namely Keplr & secretcli which already know how to sign this and don't require extra code and support.
+The data structure for query permits was chosen to accommodate existing tools in the ecosystem, namely Keplr & secretd which already know how to sign this and don't require extra code and support.
 
 ### Permit content - `StdSignDoc`
 
@@ -118,7 +118,7 @@ Note that `ChainID` can be just a free-form string, but Keplr enforces that it's
 
 ```json
 {
-  "chain_id": "secret-3",
+  "chain_id": "secret-4",
   "account_number": "0",
   "sequence": "0",
   "msgs": [
@@ -158,11 +158,11 @@ Signature is a JSON object of this type:
 }
 ```
 
-It's the output of `window.keplr.signAmino()` & `secretcli tx sign-doc`, and represents a signature on the permit's content with the secp256k1 private key of the account.
+It's the output of `window.keplr.signAmino()` & `secretd tx sign-doc`, and represents a signature on the permit's content with the secp256k1 private key of the account.
 
 Reference implementations for how to create this signature:
 
-- [secretcli](https://github.com/enigmampc/cosmos-sdk/blob/217cc79f3c0583e09222b1e9602a5544f1c66af8/x/auth/client/cli/tx_sign_doc.go#L122-L131)
+- [secretd](https://github.com/enigmampc/cosmos-sdk/blob/217cc79f3c0583e09222b1e9602a5544f1c66af8/x/auth/client/cli/tx_sign_doc.go#L122-L131)
 - [Keplr](https://github.com/chainapsis/keplr-extension/blob/494cd1eba646db8a129be227d277e037778ecd17/packages/background/src/keyring/service.ts#L290-L300)
 
 ## Messages
@@ -426,11 +426,11 @@ const { balance } = await secretjs.queryContractSmart(
 console.log(balance.amount);
 ```
 
-### secretcli
+### secretd
 
 ```console
 $ echo '{
-    "chain_id": "secret-3",
+    "chain_id": "secret-4",
     "account_number": "0",
     "sequence": "0",
     "msgs": [
@@ -441,7 +441,7 @@ $ echo '{
                 "allowed_tokens": [
                     "secret18vd8fpwxzck93qlwghaj6arh4p7c5n8978vsyg"
                 ],
-                "permissions": ["balance"],
+                "permissions": ["balance"]
             }
         }
     ],
@@ -456,6 +456,6 @@ $ echo '{
     },
     "memo": ""
 }' > ./permit.json
-$ secretcli tx sign-doc ./permit.json --from yo > ./sig.json
-$ secretcli q compute query secret18vd8fpwxzck93qlwghaj6arh4p7c5n8978vsyg '{"with_permit":{"query":{"balance":{}},"permit":{"params":{"permit_name":"test","allowed_tokens":["secret18vd8fpwxzck93qlwghaj6arh4p7c5n8978vsyg"],"chain_id":"secret-3","permissions":["balance"]},"signature":'"$(cat ./sig.json)"'}}}'
+$ secretd tx sign-doc ./permit.json --from yo > ./sig.json
+$ secretd q compute query secret18vd8fpwxzck93qlwghaj6arh4p7c5n8978vsyg '{"with_permit":{"query":{"balance":{}},"permit":{"params":{"permit_name":"test","allowed_tokens":["secret18vd8fpwxzck93qlwghaj6arh4p7c5n8978vsyg"],"chain_id":"secret-4","permissions":["balance"]},"signature":'"$(cat ./sig.json)"'}}}'
 ```
