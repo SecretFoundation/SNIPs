@@ -40,7 +40,7 @@ This specification is split into multiple sections, a contract may only implemen
 
 		Queries
 
-		[WithPermit](#WithPermit)
+		* [WithPermit](#WithPermit)
 
 	* [Token Supply](#token-supply)
 
