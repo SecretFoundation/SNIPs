@@ -39,6 +39,7 @@ This specification is split into multiple sections, a contract may only implemen
     * [Query Permits](#Query-Permits)
 
 		Queries
+
 		[WithPermit](#WithPermit)
 
 	* [Token Supply](#token-supply)
@@ -1298,27 +1299,27 @@ Because SNIP-721s already provide whitelisting functionality for approving other
 ## Query
 
 ### WithPermit
-WithPermit wraps permit queries in the same manner as [SNIP-24](https://github.com/SecretFoundation/SNIPs/blob/master/SNIP-24.md#WithPermit).
+WithPermit wraps permit queries in the [same manner](https://github.com/SecretFoundation/SNIPs/blob/master/SNIP-24.md#WithPermit) as SNIP-24.
 
 ##### Request
 ```
 {
 	"with_permit": {
 		"permit": {
-    		"params": {
-		        "permit_name": "some_name",
-		        "allowed_tokens": ["collection_address_1", "collection_address_2", "..."],
-		        "chain_id": "some_chain_id",
-		        "permissions": ["owner"]
-		    },
-		    "signature": {
-		        "pub_key": {
-        			"type": "tendermint/PubKeySecp256k1",
-    				"value": "33_bytes_of_secp256k1_pubkey_as_base64"
-        		},
-        		"signature": "64_bytes_of_secp256k1_signature_as_base64"
+			"params": {
+				"permit_name": "some_name",
+				"allowed_tokens": ["collection_address_1", "collection_address_2", "..."],
+				"chain_id": "some_chain_id",
+				"permissions": ["owner"]
+			},
+			"signature": {
+				"pub_key": {
+					"type": "tendermint/PubKeySecp256k1",
+					"value": "33_bytes_of_secp256k1_pubkey_as_base64"
+				},
+				"signature": "64_bytes_of_secp256k1_signature_as_base64"
 			}
-    	},
+		},
 		"query": {
 			"QueryWithPermit_variant_defined_below": { "...": "..." }
 		}
@@ -1334,16 +1335,16 @@ WithPermit wraps permit queries in the same manner as [SNIP-24](https://github.c
 QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries that require authentication.  The input parameters are the same as the corresponding query other than the absence of [ViewerInfo](#viewerinfo) and viewing keys because the permit supplied with the `WithPermit` query provides both the address and authentication.
 
 * NumTokens ([corresponds to](#NumTokens))
-##### Request
+##### WithPermit `query` Parameter
 ```
-{
+"query": {
 	"num_tokens": {}
 }
 ```
 * OwnerOf ([corresponds to](#OwnerOf))
-##### Request
+##### WithPermit `query` Parameter
 ```
-{
+"query": {
 	"owner_of": {
 		"token_id": "ID_of_the_token_being_queried",
 		"include_expired": true | false
@@ -1351,9 +1352,9 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 }
 ```
 * AllNftInfo ([corresponds to](#allnftinfo))
-##### Request
+##### WithPermit `query` Parameter
 ```
-{
+"query": {
 	"all_nft_info": {
 		"token_id": "ID_of_the_token_being_queried",
 		"include_expired": true | false
@@ -1361,18 +1362,18 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 }
 ```
 * PrivateMetadata ([corresponds to](#PrivateMetadata))
-##### Request
+##### WithPermit `query` Parameter
 ```
-{
+"query": {
 	"private_metadata": {
 		"token_id": "ID_of_the_token_being_queried",
 	}
 }
 ```
 * NftDossier ([corresponds to](#NftDossier))
-##### Request
+##### WithPermit `query` Parameter
 ```
-{
+"query": {
 	"nft_dossier": {
 		"token_id": "ID_of_the_token_being_queried",
 		"include_expired": true | false
@@ -1380,9 +1381,9 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 }
 ```
 * TokenApprovals ([corresponds to](#TokenApprovals))
-##### Request
+##### WithPermit `query` Parameter
 ```
-{
+"query": {
 	"token_approvals": {
 		"token_id": "ID_of_the_token_being_queried",
 		"include_expired": true | false
@@ -1390,27 +1391,27 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 }
 ```
 * ApprovedForAll ([corresponds to](#ApprovedForAll))
-##### Request
+##### WithPermit `query` Parameter
 ```
-{
+"query": {
 	"approved_for_all": {
 		"include_expired": true | false
 	}
 }
 ```
 * InventoryApprovals ([corresponds to](#InventoryApprovals))
-##### Request
+##### WithPermit `query` Parameter
 ```
-{
+"query": {
 	"inventory_approvals": {
 		"include_expired": true | false
 	}
 }
 ```
 * Tokens ([corresponds to](#tokens))
-##### Request
+##### WithPermit `query` Parameter
 ```
-{
+"query": {
 	"tokens": {
 		"owner": "address_whose_inventory_is_being_queried",
 		"start_after": "optionally_display_only_token_ids_that_come_after_this_one_in_the_list",
@@ -1419,9 +1420,9 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 }
 ```
 * TransactionHistory ([corresponds to](#TransactionHistory))
-##### Request
+##### WithPermit `query` Parameter
 ```
-{
+"query": {
 	"transaction_history": {
 		"page": "optional_page_to_display",
 		"page_size": 10
@@ -1429,9 +1430,9 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 }
 ```
 * AllTokens ([corresponds to](#AllTokens))
-##### Request
+##### WithPermit `query` Parameter
 ```
-{
+"query": {
 	"all_tokens": {
 		"start_after": "optionally_display_only_token_ids_that_come_after_this_one_in_the_list",
 		"limit": 10
@@ -1439,18 +1440,18 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 }
 ```
 * RoyaltyInfo ([corresponds to](#royaltyquery))
-##### Request
+##### WithPermit `query` Parameter
 ```
-{
+"query": {
 	"royalty_info": {
 		"token_id": "optional_ID_of_the_token_being_queried",
 	}
 }
 ```
 * VerifyTransferApproval ([corresponds to](#VerifyTransferApproval))
-##### Request
+##### WithPermit `query` Parameter
 ```
-{
+"query": {
 	"verify_transfer_approval": {
 		"token_ids": [
 			"list", "of", "tokens", "to", "check", "for", "transfer", "approval", "..."
