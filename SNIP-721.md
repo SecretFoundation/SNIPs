@@ -36,6 +36,12 @@ This specification is split into multiple sections, a contract may only implemen
 
 * [Receiver Interface](#Receiver-Interface)
 * [Optional Functionality](#Optional-Functionality)
+    * [Query Permits](#Query-Permits)
+
+		Queries
+
+		* [WithPermit](#WithPermit)
+
 	* [Token Supply](#token-supply)
 
 		Queries
@@ -1285,6 +1291,175 @@ BatchReceiveNft may be a HandleMsg variant of any contract that wants to impleme
 # Optional Functionality
 These messages and queries are not mandatory for SNIP-721 compliance; however, they are considered useful enough to be included in the [SNIP-721 reference implementation](https://github.com/baedrik/snip721-reference-impl).  As such, the [SNIP-721 toolkit package](https://github.com/enigmampc/secret-toolkit/tree/master/packages/snip721) includes functions to call these messages and queries, and SNIP-721 contract developers may wish to implement them.
 
+## Query Permits
+SNIP-721 contracts may optionally implement query permits as specified in [SNIP-24](https://github.com/SecretFoundation/SNIPs/blob/master/SNIP-24.md).  They are an improvement over viewing keys in that permits allow a user to query private information without first needing to send a transaction to set or create a viewing key (see [here](https://github.com/SecretFoundation/SNIPs/blob/master/SNIP-24.md#Rationale) for more details).
+
+Because SNIP-721s already provide whitelisting functionality for approving other addresses to view private information, SNIP-721 permits typically use the `owner` permission type to authenticate the query to display all the private information that the address of the creator of the permit is authorized to see.  So, it is generally advised that you never give SNIP-721 permits with `owner` permission to anyone.  If you need someone to view private information of a token you own, you should whitelist their address, and they will then use a permit they create themselves to view only what you have approved.  This eliminates the need to provide them a permit, eliminates the need to track permit names in order to later revoke viewing permission, and provides an easy way to query the network to see everyone that currently has viewing approval.  That said, contract developers are not limited, and may choose, if appropriate for their use-case, to implement permits that have more granular permissions that users are meant to share with others.
+
+## Query
+
+### WithPermit
+WithPermit wraps permit queries in the [same manner](https://github.com/SecretFoundation/SNIPs/blob/master/SNIP-24.md#WithPermit) as SNIP-24.
+
+##### Request
+```
+{
+	"with_permit": {
+		"permit": {
+			"params": {
+				"permit_name": "some_name",
+				"allowed_tokens": ["collection_address_1", "collection_address_2", "..."],
+				"chain_id": "some_chain_id",
+				"permissions": ["owner"]
+			},
+			"signature": {
+				"pub_key": {
+					"type": "tendermint/PubKeySecp256k1",
+					"value": "33_bytes_of_secp256k1_pubkey_as_base64"
+				},
+				"signature": "64_bytes_of_secp256k1_signature_as_base64"
+			}
+		},
+		"query": {
+			"QueryWithPermit_variant_defined_below": { "...": "..." }
+		}
+	}
+}
+```
+| Name   | Type                                                                                  | Description                                   | Optional | Value If Omitted |
+|--------|---------------------------------------------------------------------------------------|-----------------------------------------------|----------|------------------|
+| permit | [Permit](https://github.com/SecretFoundation/SNIPs/blob/master/SNIP-24.md#WithPermit) | A permit following SNIP-24 standard           | no       |                  |
+| query  | [QueryWithPermit (see below)](#QueryWithPermit)                                       | The query to perform and its input parameters | no       |                  |
+
+#### QueryWithPermit
+QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries that require authentication.  The input parameters are the same as the corresponding query other than the absence of [ViewerInfo](#viewerinfo) and viewing keys because the permit supplied with the `WithPermit` query provides both the address and authentication.
+
+* NumTokens ([corresponding query](#NumTokens))
+##### WithPermit `query` Parameter
+```
+"query": {
+	"num_tokens": {}
+}
+```
+* OwnerOf ([corresponding query](#OwnerOf))
+##### WithPermit `query` Parameter
+```
+"query": {
+	"owner_of": {
+		"token_id": "ID_of_the_token_being_queried",
+		"include_expired": true | false
+	}
+}
+```
+* AllNftInfo ([corresponding query](#allnftinfo))
+##### WithPermit `query` Parameter
+```
+"query": {
+	"all_nft_info": {
+		"token_id": "ID_of_the_token_being_queried",
+		"include_expired": true | false
+	}
+}
+```
+* PrivateMetadata ([corresponding query](#PrivateMetadata))
+##### WithPermit `query` Parameter
+```
+"query": {
+	"private_metadata": {
+		"token_id": "ID_of_the_token_being_queried",
+	}
+}
+```
+* NftDossier ([corresponding query](#NftDossier))
+##### WithPermit `query` Parameter
+```
+"query": {
+	"nft_dossier": {
+		"token_id": "ID_of_the_token_being_queried",
+		"include_expired": true | false
+	}
+}
+```
+* TokenApprovals ([corresponding query](#TokenApprovals))
+##### WithPermit `query` Parameter
+```
+"query": {
+	"token_approvals": {
+		"token_id": "ID_of_the_token_being_queried",
+		"include_expired": true | false
+	}
+}
+```
+* ApprovedForAll ([corresponding query](#ApprovedForAll))
+##### WithPermit `query` Parameter
+```
+"query": {
+	"approved_for_all": {
+		"include_expired": true | false
+	}
+}
+```
+* InventoryApprovals ([corresponding query](#InventoryApprovals))
+##### WithPermit `query` Parameter
+```
+"query": {
+	"inventory_approvals": {
+		"include_expired": true | false
+	}
+}
+```
+* Tokens ([corresponding query](#tokens))
+##### WithPermit `query` Parameter
+```
+"query": {
+	"tokens": {
+		"owner": "address_whose_inventory_is_being_queried",
+		"start_after": "optionally_display_only_token_ids_that_come_after_this_one_in_the_list",
+		"limit": 10
+	}
+}
+```
+* TransactionHistory ([corresponding query](#TransactionHistory))
+##### WithPermit `query` Parameter
+```
+"query": {
+	"transaction_history": {
+		"page": "optional_page_to_display",
+		"page_size": 10
+	}
+}
+```
+* AllTokens ([corresponding query](#AllTokens))
+##### WithPermit `query` Parameter
+```
+"query": {
+	"all_tokens": {
+		"start_after": "optionally_display_only_token_ids_that_come_after_this_one_in_the_list",
+		"limit": 10
+	}
+}
+```
+* RoyaltyInfo ([corresponding query](#royaltyquery))
+##### WithPermit `query` Parameter
+```
+"query": {
+	"royalty_info": {
+		"token_id": "optional_ID_of_the_token_being_queried",
+	}
+}
+```
+* VerifyTransferApproval ([corresponding query](#VerifyTransferApproval))
+##### WithPermit `query` Parameter
+```
+"query": {
+	"verify_transfer_approval": {
+		"token_ids": [
+			"list", "of", "tokens", "to", "check", "for", "transfer", "approval", "..."
+		],
+	}
+}
+```
+
 ## Token Supply
 
 ## Query
@@ -1681,12 +1856,17 @@ If a `token_id` is provided in the request, RoyaltyInfo returns the royalty info
 {
 	"royalty_info": {
 		"token_id": "optional_ID_of_the_token_being_queried",
+		"viewer": {
+			"address": "address_of_the_querier_if_supplying_optional_ViewerInfo",
+			"viewing_key": "viewer's_key_if_supplying_optional_ViewerInfo"
+		},
 	}
 }
 ```
 | Name            | Type                                  | Description                                                           | Optional | Value If Omitted                     |
 |-----------------|---------------------------------------|-----------------------------------------------------------------------|----------|--------------------------------------|
 | token_id        | string                                | ID of the token being queried                                         | yes      | query contract's default RoyaltyInfo |
+| viewer          | [ViewerInfo (see above)](#viewerinfo) | The address and viewing key performing this query                     | yes      | nothing                              |
 
 ##### Response
 ```
