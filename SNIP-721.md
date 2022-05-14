@@ -1334,14 +1334,14 @@ WithPermit wraps permit queries in the [same manner](https://github.com/SecretFo
 #### QueryWithPermit
 QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries that require authentication.  The input parameters are the same as the corresponding query other than the absence of [ViewerInfo](#viewerinfo) and viewing keys because the permit supplied with the `WithPermit` query provides both the address and authentication.
 
-* NumTokens ([corresponds to](#NumTokens))
+* NumTokens ([corresponding query](#NumTokens))
 ##### WithPermit `query` Parameter
 ```
 "query": {
 	"num_tokens": {}
 }
 ```
-* OwnerOf ([corresponds to](#OwnerOf))
+* OwnerOf ([corresponding query](#OwnerOf))
 ##### WithPermit `query` Parameter
 ```
 "query": {
@@ -1351,7 +1351,7 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 	}
 }
 ```
-* AllNftInfo ([corresponds to](#allnftinfo))
+* AllNftInfo ([corresponding query](#allnftinfo))
 ##### WithPermit `query` Parameter
 ```
 "query": {
@@ -1361,7 +1361,7 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 	}
 }
 ```
-* PrivateMetadata ([corresponds to](#PrivateMetadata))
+* PrivateMetadata ([corresponding query](#PrivateMetadata))
 ##### WithPermit `query` Parameter
 ```
 "query": {
@@ -1370,7 +1370,7 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 	}
 }
 ```
-* NftDossier ([corresponds to](#NftDossier))
+* NftDossier ([corresponding query](#NftDossier))
 ##### WithPermit `query` Parameter
 ```
 "query": {
@@ -1380,7 +1380,7 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 	}
 }
 ```
-* TokenApprovals ([corresponds to](#TokenApprovals))
+* TokenApprovals ([corresponding query](#TokenApprovals))
 ##### WithPermit `query` Parameter
 ```
 "query": {
@@ -1390,7 +1390,7 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 	}
 }
 ```
-* ApprovedForAll ([corresponds to](#ApprovedForAll))
+* ApprovedForAll ([corresponding query](#ApprovedForAll))
 ##### WithPermit `query` Parameter
 ```
 "query": {
@@ -1399,7 +1399,7 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 	}
 }
 ```
-* InventoryApprovals ([corresponds to](#InventoryApprovals))
+* InventoryApprovals ([corresponding query](#InventoryApprovals))
 ##### WithPermit `query` Parameter
 ```
 "query": {
@@ -1408,7 +1408,7 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 	}
 }
 ```
-* Tokens ([corresponds to](#tokens))
+* Tokens ([corresponding query](#tokens))
 ##### WithPermit `query` Parameter
 ```
 "query": {
@@ -1419,7 +1419,7 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 	}
 }
 ```
-* TransactionHistory ([corresponds to](#TransactionHistory))
+* TransactionHistory ([corresponding query](#TransactionHistory))
 ##### WithPermit `query` Parameter
 ```
 "query": {
@@ -1429,7 +1429,7 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 	}
 }
 ```
-* AllTokens ([corresponds to](#AllTokens))
+* AllTokens ([corresponding query](#AllTokens))
 ##### WithPermit `query` Parameter
 ```
 "query": {
@@ -1439,7 +1439,7 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 	}
 }
 ```
-* RoyaltyInfo ([corresponds to](#royaltyquery))
+* RoyaltyInfo ([corresponding query](#royaltyquery))
 ##### WithPermit `query` Parameter
 ```
 "query": {
@@ -1448,7 +1448,7 @@ QueryWithPermit is an enum whose variants correlate with all SNIP-721 queries th
 	}
 }
 ```
-* VerifyTransferApproval ([corresponds to](#VerifyTransferApproval))
+* VerifyTransferApproval ([corresponding query](#VerifyTransferApproval))
 ##### WithPermit `query` Parameter
 ```
 "query": {
