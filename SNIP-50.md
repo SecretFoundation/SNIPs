@@ -15,7 +15,7 @@ This feature is conceptually similar to the `padding` field; it allows clients t
 
 The public `gas_used` result of a contract execution leaks data about the code path taken.
 
-As a simple example, an attacker could use the `gas_used` information to distinguish between the following SNIP-2x execution methods with high confidence: create_viewing_key, set_viewing_key, increase_allowance/decrease_allowance, send/transfer, revoke_permit, and so on.
+As a simple example, an attacker could use the `gas_used` information to distinguish between the following SNIP-2x execution methods with high confidence: `create_viewing_key`, `set_viewing_key`, `increase_allowance`/`decrease_allowance`, `send`/`transfer`, `revoke_permit`, and so on.
 
 In some cases, an attacker could narrow or even deduce the range of possible values that certain arguments or storage items held during execution.
 
