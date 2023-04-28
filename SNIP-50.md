@@ -1,7 +1,15 @@
+---
+snip: 50
+title: Evaporation: Wasm Execution Gas Privacy
+status: Draft
+type: Informational
+author: Blake Regalia (@blake-regalia), Ben Adams (@darwinzer0)
+created: 2023-04-28
+---
+
 # SNIP-50 - Evaporation: Wasm Execution Gas Privacy
 
 This feature is conceptually similar to the `padding` field; it allows clients to parameterize their message in order to mitigate data leaking through the publicly viewable execution metadata. Whereas `padding` is used to fill the length of encrypted messages, evaporation is used to fill the resultant `gas_used` field of execution transaction results.
-
 
 ## Rationale
 
