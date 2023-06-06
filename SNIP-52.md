@@ -7,7 +7,8 @@ Allows clients to receive notifications when certain events within a smart contr
   * [Overview](#overview)
     * [How it works](#how-it-works-high-level)
     * [Example flow](#example-flow)
-* [Concepts]
+    * [Diagram](#diagram)
+* [Concepts](#concepts)
   * [Notification ID](#notification-id)
   * [Channels](#channels)
   * [Notification Seed](#notification-seed)
@@ -18,6 +19,11 @@ Allows clients to receive notifications when certain events within a smart contr
   * [ListChannels Query](#listchannels-query)
   * [ChannelInfo Query](#channelinfo-query)
   * [UpdateSeed Method](#updateseed-method)
+* Algorithms
+  * [Notification Seed Algorithm](#notification-seed-algorithm)
+  * [Notification ID Algorithm](#notification-id-algorithm)
+  * [Notification Data Algorithms](#notification-data-algorithms)
+* [Cryptography](#cryptography)
 * [Notification ID Algorithm](#notification-id-algorithm)
 * [Privacy Considerations](#privacy-considerations)
   * [Decoys](#decoys)
@@ -55,25 +61,24 @@ First, let's review the basic components that make this possible:
 
 Let's walk through a simple example, where client Alice wants to be notified next time she receives a transfer of token X into her account.
 
-For simplicity, this example does not make use of custom notification data.
-
-> NOTE: This example uses fake data for brevity. Actual seeds and IDs are much longer.
+> NOTE: Example uses fake base64 data for brevity
 
 1. Alice queries the token X contract to get the unique Notification ID for her next incoming transfer:
     ```json
     {
-      "next_notification_id": {
+      "channel_info": {
         "channel": "transfers"
       }
     }
     ```
 
-    The contract responds:
+2. The contract responds:
     ```json
     {
-      "next_notification_id": {
+      "channel_info": {
         "channel": "transfers",
         "seed": "ecc7f60418aa",
+        "counter": "3",
         "next_id": "ZjZjYzVhYjU4",
         "as_of_block": "1131420"
       }
@@ -84,23 +89,23 @@ For simplicity, this example does not make use of custom notification data.
 
     Furthermore, Alice now has a seed she can use to derive future Notification IDs offline for subsequent transfer events (i.e., without having to query this contract again)
 
-2. Before, after, or simultaneously with step 1, Alice subscribes to transaction events:
+3. Alice subscribes to execution events on the token contract:
     ```json
     {
       "jsonrpc": "2.0",
       "id": "0",
       "method": "subscribe",
       "params": {
-        "query": "tm.event='Tx'"
+        "query": "wasm.contract_address='secret1ku936rhzqynw6w2gqp4e5hsdtnvwajj6r7mc5z'"
       }
     }
     ```
 
-    Alice will now receive a JSONRPC message for each new transaction event from the chain, from which she can search for her unique Notification ID.
+    Alice will now receive a JSONRPC message for each new execution of the contract, from which she can search for her unique Notification ID.
     
-    Alternatively, if she trusts the WebSocket server won't record her activity, she can use a filter in the `query` field of her subscription message, e.g., `tm.event='Tx' AND wasm.ZjZjYzVhYjU4 EXISTS` .
+    Alternatively, if she trusts the WebSocket server won't record her activity, she can use a filter in the `query` field of her subscription message, e.g., `wasm.ZjZjYzVhYjU4 EXISTS` .
 
-3. Some time later, Bob executes a SNIP-20 transfer of token X to Alice's account:
+4. Some time later, Bob executes a SNIP-20 transfer of token X to Alice's account:
     ```json
     {
       "transfer": {
@@ -110,7 +115,7 @@ For simplicity, this example does not make use of custom notification data.
     }
     ```
 
-    The contract derives the next transfer Notification ID for the recipient (Alice) and adds it as a custom attribute to the transaction log.
+5. The contract derives the next transfer Notification ID for the recipient (Alice) and adds it as a custom attribute to the transaction log.
     ```json
     {
       "...": {},
@@ -121,7 +126,17 @@ For simplicity, this example does not make use of custom notification data.
     }
     ```
 
-4. The WebSocket server transmits the transaction event JSONRPC message to Alice. Alice finds the expected attribute key `"wasm.ZjZjYzVhYjU4"` and the notification has been received.
+6. The WebSocket server transmits the transaction event JSONRPC message to Alice. Alice finds the expected attribute key `"wasm.ZjZjYzVhYjU4"` and the notification has been received.
+
+
+### Diagram
+
+![SNIP-52 Notification Map](./media/notification-map.png)
+
+
+### Remarks on the above example
+
+Once Alice has obtained her Notification Seed for the desired channel, she no longer needs to query the contract and steps 4-6 can repeat ad infinitum.
 
 
 # Concepts
@@ -272,31 +287,81 @@ Response (same as [`channel_info` query](#channelinfo-query) response):
 ```
 
 
-## Notification ID Algorithm
+## Notification Seed Algorithm
 
-Pseudocode for generating Notification IDs:
+Pseudocode for settling on a seed to use (contract):
 ```
-fun notificationIDFor(channelId, recipientAddr) {
-  // counter reflects the nth notification for the given recipient in the given channel
-  let counter := numNotificationsFor[recipientAddr][channelId]
-
+fun getSeedFor(recipientAddr) {
   // recipient has a shared secret with contract
-  let sharedSecret = sharedSecretsTable[recipientAddr]
+  let seed := sharedSecretsTable[recipientAddr]
 
-  // use shared secret for seed
-  if exists(sharedSecret):
-    seed := sharedSecret
-  // otherwise, derive seed using contract's internal secret
-  else:
+  // no explicit shared secret; derive seed using contract's internal secret
+  if NOT exists(seed):
     seed := hkdf(ikm=contractInternalSecret, info=canonical(recipientAddr))
 
+  return seed
+}
+```
+
+
+## Notification ID Algorithm
+
+Pseudocode for generating Notification IDs (both contract & client):
+```
+fun notificationIDFor(contractOrRecipientAddr, channelId) {
+  // counter reflects the nth notification for the given contract/recipient in the given channel
+  let counter := getCounterFor(contractOrRecipientAddr, channelId)
+
   // compute notification ID for this event
-  let material = concat(channelId, ":", counter)
-  let notificationID := hmac_sha256(seed, material)
+  let seed := getSeedFor(contractOrRecipientAddr)
+  let material := concat(channelId, ":", counter)
+  let notificationID := hmac_sha256(key=seed, message=material)
 
   return notificationID
 }
 ```
+
+
+## Notification Data Algorithms
+
+Pseudocode for encrypting data into notifications (contract):
+```
+fun encryptNotificationData(recipientAddr, channelId, plaintext) {
+  // counter reflects the nth notification for the given recipient in the given channel
+  let counter := getCounterFor(recipientAddr, channelId)
+
+  // encrypt notification data for this event
+  let seed := getSeedFor(recipientAddr)
+  let notificationData := chacha20poly1305_encrypt(key=seed, nonce=counter, message=pad(plaintext, DATA_LEN))
+
+  return notificationData
+}
+```
+
+
+Pseudocode for decrypting data from notifications (client):
+```
+fun decryptNotificationData(contractAddr, channelId, ciphertext) {
+  // counter reflects the nth notification for the given contract in the given channel
+  let counter := getCounterFor(contractAddr, channelId)
+
+  // decrypt notification data
+  let seed := getSeedFor(contractAddr)
+  let notificationData := chacha20poly1305_decrypt(key=seed, nonce=counter, message=ciphertext)
+
+  return notificationData
+}
+```
+
+## Cryptography
+
+A quick overview of cryptographic schemes used:
+
+ - Notification Seed
+   - via Internal Contract Secret -- HKDF
+   - via UpdateSeed Method -- Secp256k1 signature and verification
+ - Notification ID -- HMAC-SHA256
+ - Notification Data -- ChaCha20-Poly1305
 
 
 ## Privacy Considerations
