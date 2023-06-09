@@ -270,7 +270,6 @@ Request:
 ```json
 {
   "update_seed": {
-    "channel": "<id of channel>",
     "signed_doc": {
       "params": {
         "chain_id": "secret-4",
@@ -289,15 +288,11 @@ Request:
 }
 ```
 
-Response (same as [`channel_info` query](#channelinfo-query) response):
+Response:
 ```json
 {
   "update_seed": {
-    "channel": "<same as query input>",
     "seed": "<shared secret in base64>",
-    "counter": "<current counter value>",
-    "next_id": "<the next Notification ID>",
-    "as_of_block": "<scopes validity of this response>",
   }
 }
 ```
