@@ -326,8 +326,8 @@ fun notificationIDFor(contractOrRecipientAddr, channelId) {
 
   // compute notification ID for this event
   let seed := getSeedFor(contractOrRecipientAddr)
-  let material := concat(channelId, ":", counter)
-  let notificationID := hmac_sha256(key=seed, message=material)
+  let material := concatStrings(channelId, ":", uintToDecimalString(counter))
+  let notificationID := hmac_sha256(key=seed, message=utf8ToBytes(material))
 
   return notificationID
 }
@@ -336,17 +336,26 @@ fun notificationIDFor(contractOrRecipientAddr, channelId) {
 
 ## Notification Data Algorithms
 
+Contracts are encouraged to use [CBOR](https://cbor.io/) to encode/decode information in the notification data.
+
 Pseudocode for encrypting data into notifications (contract):
 ```
 fun encryptNotificationData(recipientAddr, channelId, plaintext) {
   // counter reflects the nth notification for the given recipient in the given channel
   let counter := getCounterFor(recipientAddr, channelId)
 
-  // encrypt notification data for this event
   let seed := getSeedFor(recipientAddr)
-  let notificationData := chacha20poly1305_encrypt(key=seed, nonce=counter, message=pad(plaintext, DATA_LEN))
 
-  return notificationData
+  // ChaCha20 expects a 96-bit (12 bytes) nonce. encode uint64 counter using BE and left-pad with 4 bytes of 0x00
+  let nonce := concat(zeros(4), uint64BigEndian(counter))
+
+  // right-pad the plaintext with 0x00 bytes until it is of the desired length
+  let message := concat(plaintext, zeros(DATA_LEN - len(plaintext)))
+
+  // encrypt notification data for this event
+  let ciphertext := chacha20poly1305_encrypt(key=seed, nonce=nonce, message=message)
+
+  return ciphertext
 }
 ```
 
@@ -357,11 +366,14 @@ fun decryptNotificationData(contractAddr, channelId, ciphertext) {
   // counter reflects the nth notification for the given contract in the given channel
   let counter := getCounterFor(contractAddr, channelId)
 
+  // ChaCha20 expects a 96-bit (12 bytes) nonce. encode uint64 counter using BE and left-pad with 4 bytes of 0x00
+  let nonce := concat(zeros(4), uint64BigEndian(counter))
+
   // decrypt notification data
   let seed := getSeedFor(contractAddr)
-  let notificationData := chacha20poly1305_decrypt(key=seed, nonce=counter, message=ciphertext)
+  let plaintext := trimTrailingZeros(chacha20poly1305_decrypt(key=seed, nonce=nonce, message=ciphertext))
 
-  return notificationData
+  return plaintext
 }
 ```
 
