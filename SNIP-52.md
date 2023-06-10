@@ -237,7 +237,7 @@ The response also provides the viewer's current seed for the given channel, allo
 
 Allows clients to set a new shared secret. In order to guarantee the provided secret has high entropy, clients must submit a signed document params and signature to be verified before the new shared secret (i.e., the signature) is accepted.
 
-To get the signature the signed document follows the query permit format, with new `type` `"notification_seed"` and `value` containing two fields: `contract` and `previous_seed`.
+To get the signature the signed document follows the query permit format, but with a new `type` `"notification_seed"` and `value` containing two fields: `contract` and `previous_seed`.
 
 ```json
 {
