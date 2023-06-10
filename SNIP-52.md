@@ -292,7 +292,7 @@ Response:
 ```json
 {
   "update_seed": {
-    "seed": "<shared secret in base64>",
+    "seed": "<shared secret in base64>"
   }
 }
 ```
