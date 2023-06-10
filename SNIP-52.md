@@ -176,6 +176,7 @@ Contracts may optionally provide supplemental data with each notification. For e
 
 Developers looking to take advantage of this option should understand that ALL notifications (including decoys) will need to pad notification data to some predetermined maximum length in order to avoid privacy leaks. It is generally advised to design such payloads to be as short as possible.
 
+The recommended format for notification data is [CBOR](https://www.rfc-editor.org/rfc/rfc8949.html).
 
 
 # ListChannels Query
