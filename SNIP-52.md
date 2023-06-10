@@ -36,7 +36,7 @@ Wallets and dApps currently resort to a polling-based approach in order to notic
 
 For example, a dApp might periodically query a set of SNIP-2x token contracts to discover a new incoming transfer.
 
-However, this approach of querying contracts every so often is rather inefficient and can create unwanted load on query nodes. Additionally, there is no clear best practice for determining an optimal polling rate.
+However, this approach of querying contracts every so often is inefficient and can create unwanted load on query nodes. Additionally, there is no clear best practice for determining an optimal polling rate.
 
 
 ## Overview
@@ -235,53 +235,64 @@ The response also provides the viewer's current seed for the given channel, allo
 
 # UpdateSeed Method
 
-Allows clients to set a new shared secret. In order to guarantee the provided secret has high entropy, clients must submit a signed document and signature to be verified before the new shared secret is accepted.
+Allows clients to set a new shared secret. In order to guarantee the provided secret has high entropy, clients must submit a signed document params and signature to be verified before the new shared secret (i.e., the signature) is accepted.
 
-The signed document follows the query permit format.
+To get the signature the signed document follows the query permit format, but with a new `type` `"notification_seed"` and `value` containing two fields: `contract` and `previous_seed`.
+
+```json
+{
+  "chain_id": "secret-4",
+  "account_number": "0",
+  "sequence": "0",
+  "msgs": [
+    {
+      "type": "notification_seed",
+      "value": {
+        "contract": "<bech32 address of contract>",
+        "previous_seed": "<base64-encoded value of previous seed>"
+      }
+    }
+  ],
+  "fee": {
+    "amount": [
+      {
+        "denom": "uscrt",
+        "amount": "0"
+      }
+    ],
+    "gas": "1"
+  },
+  "memo": ""
+}
+```
 
 Request:
 ```json
 {
   "update_seed": {
-    "channel": "<id of channel>",
-    "document": {
-      "chain_id": "secret-4",
-      "account_number": "0",
-      "sequence": "0",
-      "msgs": [
-        {
-          "type": "notification_seed",
-          "value": {
-            "contract": "<bech32 address of contract>",
-            "previous_seed": "<base64-encoded value of previous seed>"
-          }
-        }
-      ],
-      "fee": {
-        "amount": [
-          {
-            "denom": "uscrt",
-            "amount": "0"
-          }
-        ],
-        "gas": "1"
+    "signed_doc": {
+      "params": {
+        "chain_id": "secret-4",
+        "contract": "<bech32 address of contract>",
+        "previous_seed": "<base64-encoded value of previous seed>"
       },
-      "memo": ""
-    },
-    "signature": "<base64-encoded signature of document>"
+      "signature": {
+        "pub_key": {
+          "type": "tendermint/PubKeySecp256k1",
+          "value": "<33 bytes of secp256k1 pubkey as base64>"
+        },
+        "signature": "<64 bytes of secp256k1 signature as base64>"
+      }
+    }
   }
 }
 ```
 
-Response (same as [`channel_info` query](#channelinfo-query) response):
+Response:
 ```json
 {
   "update_seed": {
-    "channel": "<same as query input>",
-    "seed": "<shared secret in base64>",
-    "counter": "<current counter value>",
-    "next_id": "<the next Notification ID>",
-    "as_of_block": "<scopes validity of this response>",
+    "seed": "<shared secret in base64>"
   }
 }
 ```
