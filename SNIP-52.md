@@ -165,18 +165,39 @@ By default, contracts derive a client's Notification Seed using an internal secr
 
 ### Counter
 
-In order to generate a unique Notification ID for each subsequent event, clients and contracts must produce a number only used once (i.e., a nonce) as input to the hash function. They must share an understanding for how/when to increment the nonce so that clients can continue to derive new Notification IDs offline.
+In order to generate a unique Notification ID for each subsequent event, clients and contracts MUST produce a number only used once (i.e., a nonce) as input to the hash function. They must share an understanding for how/when to increment the nonce so that clients can continue to derive new Notification IDs offline.
 
-To meet these criteria, a simple counter scheme is used to derive new nonce values, meaning that the nonce must increment by exactly one for each new notification. That way, clients and contracts are able to keep their nonce values in sync.
+To meet these criteria, a simple counter scheme is used to derive new nonce values, meaning that the nonce MUST increment by exactly one for each new notification. That way, clients and contracts are able to keep their nonce values in sync.
 
 
 ### Notification Data
 
-Contracts may optionally provide supplemental data with each notification. For example, a transfer notification may include the sender's address and token amount, encrypted in the attribute's value, i.e., `"wasm.${NOTIFICATION_ID}": "${ENCRYPED_NOTIFICATION_DATA}"`.
+Contracts MAY optionally provide supplemental data with each notification. For example, a transfer notification may include the sender's address and token amount, encrypted in the attribute's value, i.e., `"wasm.${NOTIFICATION_ID}": "${ENCRYPED_NOTIFICATION_DATA}"`.
 
 Developers looking to take advantage of this option should understand that ALL notifications (including decoys) will need to pad notification data to some predetermined maximum length in order to avoid privacy leaks. It is generally advised to design such payloads to be as short as possible.
 
-The recommended format for notification data is [CBOR](https://www.rfc-editor.org/rfc/rfc8949.html).
+Contracts SHOULD encode notification data using [CBOR](https://cbor.io/spec.html), where the top-level element is always an array of mixed types. Furthermore, contracts SHOULD provide a Concide Data Definition Language (CDDL) definition string in the [ChannelInfo Query](#channelinfo-query) response (under the `"cddl"` key) which describes the payload.
+
+For example, a basic SNIP-2x "transfers" notification would want to include the amount received and the sender. Since the token amount could possibly exceed the range of `uint64`, we use `biguint` instead. To keep the payload as short as possible, we transmit the sender's address in canonical byte form. An appropriate CDDL for its channel might look like this:
+```cddl
+transfers = [
+  amount: biguint,  ; number of indivisible token units
+  sender: bstr,     ; byte sequence of sender's canonical address
+]
+```
+
+And an example payload in CBOR diagnostic notation might look like this:
+```cbor-diag
+[1250000, h'6a2a85e93857581511c860cc6d8578d79fd63e3e']
+```
+
+For more information about CBOR and CDDL:
+ - [Specs](https://cbor.io/spec.html)
+   - [CBOR Specification](https://www.rfc-editor.org/rfc/rfc8746.html)
+   - [CDDL Specification](https://cbor-wg.github.io/cddl/draft-ietf-cbor-cddl.html)
+ - [Tools](https://cbor.io/tools.html)
+ - [Impls](https://cbor.io/impls.html)
+ - [CDDL Examples](https://github.com/cbor-wg/cddl/blob/master/cddl-examples.md)
 
 
 # ListChannels Query
@@ -225,6 +246,7 @@ Response:
     "counter": "<current counter value>",
     "next_id": "<the next Notification ID>",
     "as_of_block": "<scopes validity of this response>",
+    "cddl": "<optional CDDL schema definition string for the CBOR-encoded notification data>"
   }
 }
 ```
