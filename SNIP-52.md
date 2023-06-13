@@ -176,7 +176,7 @@ Contracts MAY optionally provide supplemental data with each notification. For e
 
 Developers looking to take advantage of this option should understand that ALL notifications (including decoys) will need to pad notification data to some predetermined maximum length in order to avoid privacy leaks. It is generally advised to design such payloads to be as short as possible.
 
-Contracts SHOULD encode notification data using [CBOR](https://cbor.io/spec.html), where the top-level element is always an array of mixed types. Furthermore, contracts SHOULD provide a Concide Data Definition Language (CDDL) definition string in the [ChannelInfo Query](#channelinfo-query) response (under the `"cddl"` key) which describes the payload.
+Contracts SHOULD encode notification data using [CBOR](https://cbor.io/spec.html), where the top-level element is always an array of mixed types. Furthermore, contracts SHOULD provide a Concise Data Definition Language (CDDL) definition string in the [ChannelInfo Query](#channelinfo-query) response (under the `"cddl"` key) which describes the payload.
 
 Walking through the basic SNIP-2x "transfers" example, a notification would want to include the amount received and the sender. Since the token amount could possibly exceed the range of `uint64`, we use `biguint` instead. To keep the payload as short as possible, we transmit the sender's address in canonical byte form. An appropriate CDDL for its channel would look like this:
 ```cddl
