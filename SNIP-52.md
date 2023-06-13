@@ -178,7 +178,7 @@ Developers looking to take advantage of this option should understand that ALL n
 
 Contracts SHOULD encode notification data using [CBOR](https://cbor.io/spec.html), where the top-level element is always an array of mixed types. Furthermore, contracts SHOULD provide a Concide Data Definition Language (CDDL) definition string in the [ChannelInfo Query](#channelinfo-query) response (under the `"cddl"` key) which describes the payload.
 
-For example, a basic SNIP-2x "transfers" notification would want to include the amount received and the sender. Since the token amount could possibly exceed the range of `uint64`, we use `biguint` instead. To keep the payload as short as possible, we transmit the sender's address in canonical byte form. An appropriate CDDL for its channel might look like this:
+Walking through the basic SNIP-2x "transfers" example, a notification would want to include the amount received and the sender. Since the token amount could possibly exceed the range of `uint64`, we use `biguint` instead. To keep the payload as short as possible, we transmit the sender's address in canonical byte form. An appropriate CDDL for its channel would look like this:
 ```cddl
 transfers = [
   amount: biguint,  ; number of indivisible token units
@@ -186,7 +186,13 @@ transfers = [
 ]
 ```
 
-And an example payload in CBOR diagnostic notation might look like this:
+Now imagine Bob transfers 1.25 token X to Alice. The corresponding information would be as follows:
+```
+amount: 1250000 micro TKN
+sender: secret1dg4gt6fc2avp2ywgvrxxmptc670av0372u2gv5
+```
+
+Encoding this information in CBOR according the above "transfers" schema results in the following payload (shown here in diagnostic notation):
 ```cbor-diag
 [1250000, h'6a2a85e93857581511c860cc6d8578d79fd63e3e']
 ```
