@@ -377,29 +377,37 @@ fun encryptNotificationData(recipientAddr, channelId, plaintext) {
   // ChaCha20 expects a 96-bit (12 bytes) nonce. encode uint64 counter using BE and left-pad with 4 bytes of 0x00
   let nonce := concat(zeros(4), uint64BigEndian(counter))
 
-  // right-pad the plaintext with 0x00 bytes until it is of the desired length
+  // right-pad the plaintext with 0x00 bytes until it is of the desired length (keep in mind, payload adds 16 bytes for tag)
   let message := concat(plaintext, zeros(DATA_LEN - len(plaintext)))
 
   // encrypt notification data for this event
-  let ciphertext := chacha20poly1305_encrypt(key=seed, nonce=nonce, message=message)
+  let [ciphertext, tag] := chacha20poly1305_encrypt(key=seed, nonce=nonce, message=message)
 
-  return ciphertext
+  // concatenate 16 bytes of tag with variable-width ciphertext
+  let payload := concat(tag, ciphertext)
+
+  return payload
 }
 ```
 
 
 Pseudocode for decrypting data from notifications (client):
 ```
-fun decryptNotificationData(contractAddr, channelId, ciphertext) {
+fun decryptNotificationData(contractAddr, channelId, payload) {
   // counter reflects the nth notification for the given contract in the given channel
   let counter := getCounterFor(contractAddr, channelId)
 
   // ChaCha20 expects a 96-bit (12 bytes) nonce. encode uint64 counter using BE and left-pad with 4 bytes of 0x00
   let nonce := concat(zeros(4), uint64BigEndian(counter))
 
+  // split payload
+  let tag := slice(payload, 0, 16)
+  let ciphertext := slice(payload, 16)
+
   // decrypt notification data
   let seed := getSeedFor(contractAddr)
-  let plaintext := trimTrailingZeros(chacha20poly1305_decrypt(key=seed, nonce=nonce, message=ciphertext))
+  let message := chacha20poly1305_decrypt(key=seed, nonce=nonce, message=ciphertext, tag=tag)
+  let plaintext := trimTrailingZeros(message)
 
   return plaintext
 }
