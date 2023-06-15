@@ -23,6 +23,7 @@ Allows clients to receive notifications when certain events within a smart contr
   * [Notification Seed Algorithm](#notification-seed-algorithm)
   * [Notification ID Algorithm](#notification-id-algorithm)
   * [Notification Data Algorithms](#notification-data-algorithms)
+  * [Dispatch Notification Algorithm](#dispatch-notification-algorithm)
 * [Cryptography](#cryptography)
 * [Notification ID Algorithm](#notification-id-algorithm)
 * [Privacy Considerations](#privacy-considerations)
