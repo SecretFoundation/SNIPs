@@ -419,6 +419,28 @@ fun decryptNotificationData(contractAddr, channelId, payload, env) {
 }
 ```
 
+
+## Dispatch Notification Algorithm
+
+Pseudocode for dispatching a notification (contract):
+```
+fun dispatchNotification(recipientAddr, channelId, plaintext, env) {
+  // obtain the current notification ID
+  let notificationId := notificationIDFor(recipientAddr, channelId)
+
+  // construct the notification data payload
+  let payload := encryptNotificationData(recipientAddr, channelId, plaintext, env);
+
+  // increment the counter
+  incrementCounterFor(contractAddr, channelId)
+
+  // emit the notification
+  addAttributeToEventLog(notificationId, payload)
+}
+```
+
+
+
 ## Cryptography
 
 A quick overview of cryptographic schemes used:
