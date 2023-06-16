@@ -15,11 +15,11 @@ Allows clients to receive notifications when certain events within a smart contr
   * [Internal Contract Secret](#internal-contract-secret)
   * [Counter](#counter)
   * [Notification Data](#notification-data)
-* Queries and Methods
+* [Queries and Methods](#queries-and-methods)
   * [ListChannels Query](#listchannels-query)
   * [ChannelInfo Query](#channelinfo-query)
   * [UpdateSeed Method](#updateseed-method)
-* Algorithms
+* [Algorithms](#algorithms)
   * [Notification Seed Algorithm](#notification-seed-algorithm)
   * [Notification ID Algorithm](#notification-id-algorithm)
   * [Notification Data Algorithms](#notification-data-algorithms)
@@ -207,7 +207,10 @@ For more information about CBOR and CDDL:
  - [CDDL Examples](https://github.com/cbor-wg/cddl/blob/master/cddl-examples.md)
 
 
-# ListChannels Query
+# Queries and Methods
+
+
+## ListChannels Query
 
 Public query to list all notification channels.
 
@@ -231,7 +234,7 @@ Response:
 }
 ```
 
-# ChannelInfo Query
+## ChannelInfo Query
 
 Authenticated query allows clients to obtain the seed, counter, and Notification ID of a future event, for a specific channel.
 
@@ -263,7 +266,7 @@ The response includes the Notification ID of the next event in the given channel
 The response also provides the viewer's current seed for the given channel, allowing the client to derive future Notification IDs for this channel offline (i.e., without having to query the contract again).
 
 
-# UpdateSeed Method
+## UpdateSeed Method
 
 Allows clients to set a new shared secret. In order to guarantee the provided secret has high entropy, clients must submit a signed document params and signature to be verified before the new shared secret (i.e., the signature) is accepted.
 
@@ -324,6 +327,40 @@ Response:
   "update_seed": {
     "seed": "<shared secret in base64>"
   }
+}
+```
+
+
+# Algorithms
+
+## Contract Internal Secret Derivation
+
+Contracts should ensure that an internal secret is generated upon initialization such that even the creator cannot predict or extract its secret.
+
+A suitably strong and robust method for generating this secret, which primarily relies on Secret Network's verifiable randomness API, is provided here in pseudocode for reference only:
+```
+fun initializeContract(msg, env) {
+  // gather entropy from sender
+  let userEntropy := msg.entropy
+
+  // extend entropy with environmental information
+  userEntropy := concat(
+    env.blockHeight,
+    env.blockTime,
+    env.senderAddress,
+    userEntropy
+  )
+
+  // the crux: obtain a unique, cryptographically-strong random value associated with this execution
+  let seed := env.random()
+
+  // also very important: derive the contract's internal secret using HKDF
+  let internalSecret := hkdf(ikm=seed, salt=sha256(entropy), info="contract_internal_secret", length=32)
+
+  // save to storage
+  saveInternalSecretToStorage(internalSecret);
+
+  // ...
 }
 ```
 
@@ -446,11 +483,29 @@ fun dispatchNotification(recipientAddr, channelId, plaintext, env) {
 
 A quick overview of cryptographic schemes used:
 
- - Notification Seed
-   - via Internal Contract Secret -- HKDF
-   - via UpdateSeed Method -- Secp256k1 signature and verification
- - Notification ID -- HMAC-SHA256
- - Notification Data -- ChaCha20-Poly1305
+
+### HKDF
+
+The contract must [derive an internal secret](#contract-internal-secret-derivation) upon initialization.
+
+Subsequently, the contract uses its internal secret and a recipient's address to derive a unique key for that recipient without them having to execute a tx (it gets shared when they make an authenticated query for it).
+
+
+### Secp256k1
+
+Recipients can optionally establish a new shared secret with the contract to provide better security against hypothetical side-chain attacks. The contract enforces determinism and high entropy for new shared secrets by requiring users to [submit a signed document](#updateseed-method) that references the previous seed.
+
+
+### HMAC-SHA256
+
+Used to [generate Notification IDs](#notification-id-algorithm).
+
+
+### ChaCha20-Poly1305
+
+This AEAD (authenticated encryption with additional data) algorithm was selected to encrypt and authenticate notification data based on its low-cost performance profile, making very efficient use of gas, and its widespread adoption, simplifying both contract and client-side implementations.
+
+Within the contract, implementations are advised to use RustCrypto's AEADs ([docs](https://docs.rs/chacha20poly1305/latest/chacha20poly1305/), [crate](https://crates.io/crates/chacha20poly1305), [GitHub](https://github.com/RustCrypto/AEADs)), which has been audited for usage inside SGX enclaves ([report](https://research.nccgroup.com/2020/02/26/public-report-rustcrypto-aes-gcm-and-chacha20poly1305-implementation-review/)).
 
 
 ## Privacy Considerations
@@ -462,6 +517,8 @@ If a contract action allows _any sender_ to trigger a notification for some reci
 For example, Mallory could fork the chain, transfer 10 token X to Alice, record the emitted Notification ID, and then wait to observe that same Notification ID on the actual chain. At that point, Mallory would be able to deduce that _someone_ transferred _some amount_ of token X to Alice.
 
 Notice that the threat model looks very different if the contract only allowed friends of Alice to transfer tokens to her account (i.e., no longer _any sender_). In that case, only a friend of Alice would be able to perform the attack.
+
+Also notice that if Alice executes the UpdateSeed method after Mallory forks the chain and before Bob transfers tokens, then Mallory's attack fails.
 
 
 ### Decoys
