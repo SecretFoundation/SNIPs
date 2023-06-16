@@ -382,7 +382,7 @@ fun encryptNotificationData(recipientAddr, channelId, plaintext, env) {
   let message := concat(plaintext, zeros(DATA_LEN - len(plaintext)))
 
   // construct the additional authenticated data
-  let aad := concatStrings(env.blockHeight, ":", env.txIndex)
+  let aad := concatStrings(env.blockHeight, ":", env.senderAddress)
 
   // encrypt notification data for this event
   let [ciphertext, tag] := chacha20poly1305_encrypt(key=seed, nonce=nonce, message=message, aad=aad)
@@ -405,7 +405,7 @@ fun decryptNotificationData(contractAddr, channelId, payload, env) {
   let nonce := concat(zeros(4), uint64BigEndian(counter))
 
   // construct the additional authenticated data
-  let aad := concatStrings(env.blockHeight, ":", env.txIndex)
+  let aad := concatStrings(env.blockHeight, ":", env.senderAddress)
 
   // split payload
   let tag := slice(payload, 0, 16)
