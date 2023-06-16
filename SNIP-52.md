@@ -335,7 +335,7 @@ Response:
 
 ## Contract Internal Secret Derivation
 
-Contracts should ensure that an internal secret is generated upon initialization such that even the creator cannot predict or extract its secret.
+Contracts should ensure that an internal secret is generated upon initialization such that even the creator cannot predict or extract its contents.
 
 A suitably strong and robust method for generating this secret, which primarily relies on Secret Network's verifiable randomness API, is provided here in pseudocode for reference only:
 ```
@@ -424,8 +424,8 @@ fun encryptNotificationData(recipientAddr, channelId, plaintext, env) {
   // encrypt notification data for this event
   let [ciphertext, tag] := chacha20poly1305_encrypt(key=seed, nonce=nonce, message=message, aad=aad)
 
-  // concatenate 16 bytes of tag with ciphertext
-  let payload := concat(tag, ciphertext)
+  // concatenate ciphertext and 16 bytes of tag (note: crypto libs typically default to doing it this way in `seal`)
+  let payload := concat(ciphertext, tag)
 
   return payload
 }
@@ -445,8 +445,8 @@ fun decryptNotificationData(contractAddr, channelId, payload, env) {
   let aad := concatStrings(env.blockHeight, ":", env.senderAddress)
 
   // split payload
-  let tag := slice(payload, 0, 16)
-  let ciphertext := slice(payload, 16)
+  let ciphertext := slice(payload, len(payload) - 16)
+  let tag := slice(payload, len(ciphertext))
 
   // decrypt notification data
   let seed := getSeedFor(contractAddr)
