@@ -387,7 +387,7 @@ fun encryptNotificationData(recipientAddr, channelId, plaintext, env) {
   // encrypt notification data for this event
   let [ciphertext, tag] := chacha20poly1305_encrypt(key=seed, nonce=nonce, message=message, aad=aad)
 
-  // concatenate 16 bytes of tag with variable-width ciphertext
+  // concatenate 16 bytes of tag with ciphertext
   let payload := concat(tag, ciphertext)
 
   return payload
