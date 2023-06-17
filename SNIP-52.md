@@ -335,9 +335,9 @@ Response:
 
 ## Contract Internal Secret Derivation
 
-Contracts should ensure that an internal secret is generated upon initialization such that even the creator cannot predict or extract its contents.
+Contracts should strive to create an internal secret such that even the creator cannot predict or extract its contents.
 
-A suitably strong and robust method for generating this secret, which primarily relies on Secret Network's verifiable randomness API, is provided here in pseudocode for reference only:
+Typically, such secrets are generated upon initialization. A suitably strong and robust method for generating this secret combines user-provided entropy and Secret Network's verifiable randomness API. Pseudocode for reference only:
 ```
 fun initializeContract(msg, env) {
   // gather entropy from sender
@@ -363,6 +363,8 @@ fun initializeContract(msg, env) {
   // ...
 }
 ```
+
+> NOTE: The above approach would still allow a malicious contract deployer to hypothetically deduce the contract's internal secret. In order to achieve greater levels of trust, the process of deriving the internal secret would require several subsequent executions where multiple third parties provide additional (secret) entropy. However, such an approach is complex and outside the scope of this document.
 
 
 ## Notification Seed Algorithm
