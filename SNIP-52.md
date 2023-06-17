@@ -20,7 +20,9 @@ Allows clients to receive notifications when certain events within a smart contr
   * [ChannelInfo Query](#channelinfo-query)
   * [UpdateSeed Method](#updateseed-method)
 * [Algorithms](#algorithms)
+  * [Contract Internal Secret Derivation](#contract-internal-secret-derivation)
   * [Notification Seed Algorithm](#notification-seed-algorithm)
+  * [Updating Seed Algorithm](#updating-seed-algorithm)
   * [Notification ID Algorithm](#notification-id-algorithm)
   * [Notification Data Algorithms](#notification-data-algorithms)
   * [Dispatch Notification Algorithm](#dispatch-notification-algorithm)
@@ -268,10 +270,11 @@ The response also provides the viewer's current seed for the given channel, allo
 
 ## UpdateSeed Method
 
-Allows clients to set a new shared secret. In order to guarantee the provided secret has high entropy, clients must submit a signed document params and signature to be verified before the new shared secret (i.e., the signature) is accepted.
+Allows clients to set a new shared secret. In order to guarantee the provided secret has high entropy, clients must submit a signed document params and signature to be verified before the new shared secret (a SHA-256 hash of the signature) is accepted.
 
-To get the signature the signed document follows the query permit format, but with a new `type` `"notification_seed"` and `value` containing two fields: `contract` and `previous_seed`.
+See the [Updating Seed Algorithm](#updating-seed-algorithm) for details on how the contract should handle this message.
 
+The signed document follows the same format as query permits, but with `type` `"notification_seed"` and `value` containing two fields: `contract` and `previous_seed`:
 ```json
 {
   "chain_id": "secret-4",
@@ -380,6 +383,50 @@ fun getSeedFor(recipientAddr) {
     seed := hkdf(ikm=contractInternalSecret, info=canonical(recipientAddr))
 
   return seed
+}
+```
+
+
+## Updating Seed Algorithm
+
+Pseudocode for verifying [`update_seed`](#updateseed-method) arguments and storing new seed (contract):
+```
+fun updateSeed(recipientAddr, signedDoc, env) {
+  // check that the params are accurate
+  assert(signedDoc.params.contract == env.contractAddr)
+  assert(signedDoc.params.previous_seed == sharedSecretsTable[recipientAddr])
+
+  // verify that the signature belongs to the sender and is for the given signed document
+  verifySecp256k1Signature(env.senderPubKey, signedDoc.signature, {
+    "chain_id": signedDoc.params.chain_id,
+    "account_number": "0",
+    "sequence": "0",
+    "msgs": [
+      {
+        "type": "notification_seed",
+        "value": {
+          "contract": signedDoc.params.contract,
+          "previous_seed": signedDoc.params.previous_seed
+        }
+      }
+    ],
+    "fee": {
+      "amount": [
+        {
+          "denom": "uscrt",
+          "amount": "0"
+        }
+      ],
+      "gas": "1"
+    },
+    "memo": ""
+  })
+
+  // hash the signature to get the 32 byte shared secret
+  let sharedSecret := sha256(signedDoc.signature.signature)
+
+  // save the shared secret to storage associated with the given recipient
+  saveToSharedSecretsTable(recipientAddr, sharedSecret)
 }
 ```
 
