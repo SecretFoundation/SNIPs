@@ -530,7 +530,7 @@ fun dispatchNotification(recipientAddr, channelId, plaintext, env) {
 
 ## Cryptography
 
-A quick overview of cryptographic schemes used:
+A quick overview of the involved cryptographic features:
 
 
 ### HKDF
