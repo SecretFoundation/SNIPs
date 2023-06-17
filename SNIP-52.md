@@ -106,7 +106,7 @@ Let's walk through a simple example, where client Alice wants to be notified nex
 
     Alice will now receive a JSONRPC message for each new execution of the contract, from which she can search for her unique Notification ID.
     
-    Alternatively, if she trusts the WebSocket server won't record her activity, she can use a filter in the `query` field of her subscription message, e.g., `wasm.ZjZjYzVhYjU4 EXISTS` .
+    <!-- Alternatively, if she trusts the WebSocket server won't record her activity, she can use a filter in the `query` field of her subscription message, e.g., `wasm.ZjZjYzVhYjU4 EXISTS` . -->
 
 4. Some time later, Bob executes a SNIP-20 transfer of token X to Alice's account:
     ```json
