@@ -179,7 +179,15 @@ Contracts MAY optionally provide supplemental data with each notification. For e
 
 Developers looking to take advantage of this option should understand that ALL notifications (including decoys) will need to pad notification data to some predetermined maximum length in order to avoid privacy leaks. It is generally advised to design such payloads to be as short as possible.
 
-Contracts SHOULD encode notification data using [CBOR](https://cbor.io/spec.html), where the top-level element is always an array of mixed types. Furthermore, contracts SHOULD provide a Concise Data Definition Language (CDDL) definition string in the [ChannelInfo Query](#channelinfo-query) response (under the `"cddl"` key) which describes the payload.
+
+#### CBOR and CDDL
+
+Contracts SHOULD encode notification data using [CBOR](https://cbor.io/spec.html), where the top-level element is always a tuple. Furthermore, contracts SHOULD provide a Concise Data Definition Language (CDDL) definition string in the [ChannelInfo Query](#channelinfo-query) response (under the `"cddl"` key) which describes the payload.
+
+For maximum interoperability:
+1. Top-level CBOR value should be a tuple
+2. CDDL type definition name should match its channel ID
+3. All elements should be annotated with human-readable names in the CDDL
 
 Walking through the basic SNIP-2x "transfers" example, a notification would want to include the amount received and the sender. Since the token amount could possibly exceed the range of `uint64`, we use `biguint` instead. To keep the payload as short as possible, we transmit the sender's address in canonical byte form. An appropriate CDDL for its channel would look like this:
 ```cddl
@@ -188,6 +196,12 @@ transfers = [
   sender: bstr,     ; byte sequence of sender's canonical address
 ]
 ```
+
+Evaluating this against the rubric above:
+1. The top-level value is a CBOR tuple ✔
+2. The CDDL type definition "transfers" matches the channel ID ✔
+3. All elements in the tuple ("amount" and "sender") are named for human-readability ✔
+
 
 Now imagine Bob transfers 1.25 token X to Alice. The corresponding information would be as follows:
 ```
