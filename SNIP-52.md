@@ -461,8 +461,15 @@ fun encryptNotificationData(recipientAddr, channelId, plaintext, env) {
 
   let seed := getSeedFor(recipientAddr)
 
-  // ChaCha20 expects a 96-bit (12 bytes) nonce. encode uint64 counter using BE and left-pad with 4 bytes of 0x00
-  let nonce := concat(zeros(4), uint64BigEndian(counter))
+  // ChaCha20 expects a 96-bit (12 bytes) nonce
+  // take the first 12 bytes of the channel id's sha256 hash
+  let channelIdBytes := slice(sha256(utf8ToBytes(channelId)), 0, 12)
+
+  // encode uint64 counter in BE and left-pad with 4 bytes of 0x00
+  let counterBytes := concat(zeros(4), uint64BigEndian(counter))
+
+  // produce the nonce by XOR'ing the two previous 12-byte results
+  let nonce := xorBytes(channelIdBytes, counterBytes)
 
   // right-pad the plaintext with 0x00 bytes until it is of the desired length (keep in mind, payload adds 16 bytes for tag)
   let message := concat(plaintext, zeros(DATA_LEN - len(plaintext)))
@@ -487,8 +494,15 @@ fun decryptNotificationData(contractAddr, channelId, payload, env) {
   // counter reflects the nth notification for the given contract in the given channel
   let counter := getCounterFor(contractAddr, channelId)
 
-  // ChaCha20 expects a 96-bit (12 bytes) nonce. encode uint64 counter using BE and left-pad with 4 bytes of 0x00
-  let nonce := concat(zeros(4), uint64BigEndian(counter))
+  // ChaCha20 expects a 96-bit (12 bytes) nonce
+  // take the first 12 bytes of the channel id's sha256 hash
+  let channelIdBytes := slice(sha256(utf8ToBytes(channelId)), 0, 12)
+
+  // encode uint64 counter in BE and left-pad with 4 bytes of 0x00
+  let counterBytes := concat(zeros(4), uint64BigEndian(counter))
+
+  // produce the nonce by XOR'ing the two previous 12-byte results
+  let nonce := xorBytes(channelIdBytes, counterBytes)
 
   // construct the additional authenticated data
   let aad := concatStrings(env.blockHeight, ":", env.senderAddress)
