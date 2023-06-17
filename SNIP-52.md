@@ -347,7 +347,7 @@ fun initializeContract(msg, env) {
   let userEntropy := msg.entropy
 
   // extend entropy with environmental information
-  userEntropy := concat(
+  let entropy := concat(
     env.blockHeight,
     env.blockTime,
     env.senderAddress,
