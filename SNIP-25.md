@@ -1,18 +1,29 @@
 # SNIP-25 - Improved privacy for [SNIP-20](/SNIP-20.md) tokens
 
-This document describes enhancements to the SNIP-20 spec, namely, the addition of `decoys` and `entropy` in execution messages in order to mitigate storage access pattern attacks. Decoys are an optional reference to a vector of Addr which, when provided, add an additional layer of privacy by obfuscating the real accounts that are being updated. Execution messages which accept the `decoy` field also accept the `entropy` field, which is an optional Binary used to introduce randomness by providing additional read and writes to the decoy addresses that are included in the message.
+This document describes enhancements to the SNIP-20 spec, namely, the addition of `decoys` and `entropy` in execution messages in order to mitigate storage access pattern attacks. Decoys are an optional reference to a vector of Addr which, when executed with sufficient entropy, add an additional layer of privacy by obfuscating the real accounts that are being updated.
 
 Contracts that support the existing SNIP-20 standard are still considered
-compliant, and clients should be written so as to benefit from this feature
+compliant, and clients SHOULD be written so as to benefit from this feature
 when available.
 
-- [Decoys and Entropy](#Decoys-And-Entropy)
+- [Rationale](#rationale)
+- [Messages](#messages)
+- [Batch Operations](#batch-operations)
+- [Randomness Appendix](#randomness-appendix)
 
-## Decoys and Entropy
+## Rationale
+
+Secret Network smart contracts provide computational privacy through the use of Trusted Execution Environments, which process encrypted data securely without revealing it publicly on chain. However, the patterns at which data is accessed when processing confidential transactions can leak crucial information. In the example of a SNIP-20, each account balance may be stored privately, but the access pattern is public, so an untrusted host OS can potentially learn private information such as recipient addresses by monitoring accesses to the key-value storage.
+
+Because the same key is used each time a user's balance is accessed, it's possible to link two transactions together. Let's say someone sends tokens from address A to address B, then later someone sends tokens from address B to address C. By knowing the keys involved, one can work out that the same address was involved in both transactions - effectively 'unmasking' the private recipient.
+
+Decoy addresses with sufficient randomness can be used to mitigate storage access pattern leakage by obfuscating the actual address that is the recipient of funds in the contract's storage. Decoys SHOULD be used for every message exposed to storage access pattern attacks, and for every transaction that does it MUST include the `decoys` parameter. Execution messages which accept the `decoys` field MAY also accept the `entropy` field, which is an optional Binary used to introduce randomness by providing additional read and writes to the decoy addresses that are included in the message. How `entropy` is implemented is left to the developer's discretion. For example, one MAY include the `decoys` field and not the `entropy` field and use Secret VRF for randomness.
+
+## Messages
 
 The existing `Redeem`, `Deposit`, `Transfer`, `Send`, `Burn`, `TransferFrom`, `SendFrom`, `BurnFrom`, and `Mint` messages now may also accept `decoy` and `entropy` fields.
 
-Example `Transfer` message, with optional reference to `decoys` and `entropy`:
+Example `Transfer` message, with optional reference to `decoys` included.
 
 ##### Request
 
@@ -25,9 +36,7 @@ Example `Transfer` message, with optional reference to `decoys` and `entropy`:
     "decoys": [
       "secret1zpaxzv6yggvmj4jj7md94rjxvnpa6q07asxyyh",
       "secret12g3ujhpkunstpdg78f8fny0r59zg6e9kghgpxy"
-    ],
-    "account_random_pos":
-    //account_random_pos is the position of the real account in the decoys array
+    ]
   }
 }
 ```
@@ -42,90 +51,35 @@ Example `Transfer` message, with optional reference to `decoys` and `entropy`:
 }
 ```
 
-### Decoys + Entropy Implementation
+## Batch Operations
 
-The [`update_balance` function](https://github.com/scrtlabs/snip20-reference-impl/blob/ea9fb0cd76f3e0d48e86b4d02a3990f2f4a84d00/src/state.rs#L136) makes use of `decoys` and `entropy`.
+Batch operations are used for handling multiple token transfers or operations in a single transaction. In the case of batch messages, the `decoys` parameter SHOULD be included with the [actions](https://github.com/scrtlabs/snip20-reference-impl/blob/ea9fb0cd76f3e0d48e86b4d02a3990f2f4a84d00/src/batch.rs#LL34C1-L40C2), rather than the messages themselves:
 
-If `decoys` is None, it loads the current balance of the account, updates it (either adds or subtracts the amount_to_be_updated), checks if the new balance is valid (in case of subtraction, the balance must not be negative), and saves the new balance back to the storage.
-
-If `decoys` is not None, it creates a new vector `accounts_to_be_written` which includes the account to be updated and all `decoy` accounts, ordered as they are in the `decoys_vec`. For each account in this vector, it loads the current balance from the storage. If the current account is the real one to be updated and it has not been updated before, the balance is updated. The (possibly updated) balance is then saved back to storage.
+Batch Transfer Message:
 
 ```rust
-pub fn update_balance(
-        store: &mut dyn Storage,
-        account: &Addr,
-        amount_to_be_updated: u128,
-        should_add: bool,
-        operation_name: &str,
-        decoys: &Option<Vec<Addr>>,
-        account_random_pos: &Option<usize>,
-    ) -> StdResult<()> {
-        match decoys {
-            None => {
-                let mut balance = Self::load(store, account);
-                balance = match should_add {
-                    true => {
-                        safe_add(&mut balance, amount_to_be_updated);
-                        balance
-                    }
-                    false => {
-                        if let Some(balance) = balance.checked_sub(amount_to_be_updated) {
-                            balance
-                        } else {
-                            return Err(StdError::generic_err(format!(
-                                "insufficient funds to {operation_name}: balance={balance}, required={amount_to_be_updated}",
-                            )));
-                        }
-                    }
-                };
-
-                Self::save(store, account, balance)
-            }
-            Some(decoys_vec) => {
-                // It should always be set when decoys_vec is set
-                let account_pos = account_random_pos.unwrap();
-
-                let mut accounts_to_be_written: Vec<&Addr> = vec![];
-
-                let (first_part, second_part) = decoys_vec.split_at(account_pos);
-                accounts_to_be_written.extend(first_part);
-                accounts_to_be_written.push(account);
-                accounts_to_be_written.extend(second_part);
-
-                // In a case where the account is also a decoy somehow
-                let mut was_account_updated = false;
-
-                for acc in accounts_to_be_written.iter() {
-                    // Always load account balance to obfuscate the real account
-                    // Please note that decoys are not always present in the DB. In this case it is ok beacuse load will return 0.
-                    let mut acc_balance = Self::load(store, acc);
-                    let mut new_balance = acc_balance;
-
-                    if *acc == account && !was_account_updated {
-                        was_account_updated = true;
-                        new_balance = match should_add {
-                            true => {
-                                safe_add(&mut acc_balance, amount_to_be_updated);
-                                acc_balance
-                            }
-                            false => {
-                                if let Some(balance) = acc_balance.checked_sub(amount_to_be_updated)
-                                {
-                                    balance
-                                } else {
-                                    return Err(StdError::generic_err(format!(
-                                        "insufficient funds to {operation_name}: balance={acc_balance}, required={amount_to_be_updated}",
-                                    )));
-                                }
-                            }
-                        };
-                    }
-                    Self::save(store, acc, new_balance)?;
-                }
-
-                Ok(())
-            }
-        }
+BatchTransfer {
+        actions: Vec<batch::TransferAction>,
+        entropy: Option<Binary>,
+        padding: Option<String>,
     }
+```
+
+Batch Transfer Action:
+
+```rust
+pub struct TransferFromAction {
+    pub owner: String,
+    pub recipient: String,
+    pub amount: Uint128,
+    pub memo: Option<String>,
+    pub decoys: Option<Vec<Addr>>,
 }
 ```
+
+## Randomness Appendix
+
+How `entropy` is implemented is left to the developer's discretion.
+
+- [See here](https://github.com/scrtlabs/snip20-reference-impl/blob/ea9fb0cd76f3e0d48e86b4d02a3990f2f4a84d00/src/state.rs#L136) for an example entropy implementation in a snip-20 compliant contract.
+- [See here](https://docs.scrt.network/secret-network-documentation/development/development-concepts/randomness-api/native-on-chain-randomness) to learn how to use Secret VRF for randomness.
