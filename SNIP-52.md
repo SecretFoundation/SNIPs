@@ -142,6 +142,25 @@ Let's walk through a simple example, where client Alice wants to be notified nex
 Once Alice has obtained her Notification Seed for the desired channel, she no longer needs to query the contract and steps 4-6 can repeat ad infinitum.
 
 
+# Modes: Counter Mode vs TxHash Mode
+
+Each channel can operate in one of two modes: Counter Mode, or TxHash Mode.
+
+There is a trade-off between these two modes. Counter Mode is easier for clients but less secure.
+
+In Counter Mode:
+ - ✅ clients only have to recompute a channel's notification ID each time they receive a notification from that channel
+ - ✅ clients are able to use node APIs such as `tx_search` to search back through history and find a missed notification
+ - ✅ clients are able to query the contract to obtain their next notification ID, allowing them to bypass much of the SNIP-52 client-side implementation
+ - ❌ an attacker could hypothetically de-anonymize notification IDs using a sophisticated side-chain attack
+
+In TxHash Mode:
+ - ✅ notifications are immune to side-chain attacks
+ - ❌ clients must recompute their notification ID for every execution tx witnessed on the given contract
+
+In summary, TxHash Mode is more secure than Counter Mode, but comes at the cost of more work for the client (although the processing heft is likely neglible). On the other hand, with Counter Mode, clients are able to easily search tx history for missed notifications, and clients can bypass computing notification IDs all-together by querying the contract.
+
+
 # Concepts
 
 ### Notification ID
@@ -268,16 +287,17 @@ Response:
 {
   "channel_info": {
     "channel": "<same as query input>",
-    "seed": "<shared secret in base64>",
-    "counter": "<current counter value>",
-    "next_id": "<the next Notification ID>",
     "as_of_block": "<scopes validity of this response>",
+    "seed": "<shared secret in base64>",
+    "mode": "counter",  // or "txhash"
+    "counter": "<current counter value>",  // only present in "counter" mode
+    "next_id": "<the next Notification ID>",  // only present in "counter" mode
     "cddl": "<optional CDDL schema definition string for the CBOR-encoded notification data>"
   }
 }
 ```
 
-The response includes the Notification ID of the next event in the given channel affecting the given viewer (who is specified in the authentication data, depending on whether a query permit or viewer key is used).
+If the channel is operating in TxHash Mode, given by `"mode": "txhash"`, then the response includes the Notification ID of the next event in the given channel affecting the given viewer (who is specified in the authentication data, depending on whether a query permit or viewer key is used).
 
 The response also provides the viewer's current seed for the given channel, allowing the client to derive future Notification IDs for this channel offline (i.e., without having to query the contract again).
 
@@ -449,13 +469,22 @@ fun updateSeed(recipientAddr, signedDoc, env) {
 
 Pseudocode for generating Notification IDs (both contract & client):
 ```
-fun notificationIDFor(contractOrRecipientAddr, channelId) {
-  // counter reflects the nth notification for the given contract/recipient in the given channel
-  let counter := getCounterFor(contractOrRecipientAddr, channelId)
+fun notificationIDFor(contractOrRecipientAddr, channelId, env) {
+  let salt := nil
+
+  // depending on which mode the channel operates in
+  if inCounterMode(channelId):
+    // counter reflects the nth notification for the given contract/recipient in the given channel
+    let counter := getCounterFor(contractOrRecipientAddr, channelId)
+    salt := uintToDecimalString(counter)
+
+  // otherwise, channel is in TxHash Mode
+  else:
+    salt := env.txHash
 
   // compute notification ID for this event
   let seed := getSeedFor(contractOrRecipientAddr)
-  let material := concatStrings(channelId, ":", uintToDecimalString(counter))
+  let material := concatStrings(channelId, ":", salt)
   let notificationID := hmac_sha256(key=seed, message=utf8ToBytes(material))
 
   return notificationID
@@ -470,28 +499,36 @@ Contracts are encouraged to use [CBOR](https://cbor.io/) to encode/decode inform
 Pseudocode for encrypting data into notifications (contract):
 ```
 fun encryptNotificationData(recipientAddr, channelId, plaintext, env) {
-  // counter reflects the nth notification for the given recipient in the given channel
-  let counter := getCounterFor(recipientAddr, channelId)
+  // ChaCha20 expects a 96-bit (12 bytes) nonce. we will combine two 12 byte buffers to create nonce
+  let saltBytes := nil
 
-  let seed := getSeedFor(recipientAddr)
+  // depending on which mode the channel operates in
+  if inCounterMode(channelId):
+    // counter reflects the nth notification for the given recipient in the given channel
+    let counter := getCounterFor(recipientAddr, channelId)
 
-  // ChaCha20 expects a 96-bit (12 bytes) nonce
+    // encode uint64 counter in BE and left-pad with 4 bytes of 0x00 to make 12 bytes
+    saltBytes := concat(zeros(4), uint64BigEndian(counter))
+
+  // otherwise, channel is in TxHash Mode
+  else:
+    // take first 12 bytes of tx hash (make sure to decode the hex string)
+    saltBytes := slice(hexToBytes(env.txHash), 0, 12)
+
   // take the first 12 bytes of the channel id's sha256 hash
   let channelIdBytes := slice(sha256(utf8ToBytes(channelId)), 0, 12)
 
-  // encode uint64 counter in BE and left-pad with 4 bytes of 0x00
-  let counterBytes := concat(zeros(4), uint64BigEndian(counter))
-
   // produce the nonce by XOR'ing the two previous 12-byte results
-  let nonce := xorBytes(channelIdBytes, counterBytes)
+  let nonce := xorBytes(channelIdBytes, saltBytes)
 
   // right-pad the plaintext with 0x00 bytes until it is of the desired length (keep in mind, payload adds 16 bytes for tag)
   let message := concat(plaintext, zeros(DATA_LEN - len(plaintext)))
 
   // construct the additional authenticated data
-  let aad := concatStrings(env.blockHeight, ":", env.senderAddress)
+  let aad := concatStrings(env.blockHeight, ":", env.txHash)
 
   // encrypt notification data for this event
+  let seed := getSeedFor(recipientAddr)
   let [ciphertext, tag] := chacha20poly1305_encrypt(key=seed, nonce=nonce, message=message, aad=aad)
 
   // concatenate ciphertext and 16 bytes of tag (note: crypto libs typically default to doing it this way in `seal`)
@@ -505,21 +542,28 @@ fun encryptNotificationData(recipientAddr, channelId, plaintext, env) {
 Pseudocode for decrypting data from notifications (client):
 ```
 fun decryptNotificationData(contractAddr, channelId, payload, env) {
-  // counter reflects the nth notification for the given contract in the given channel
-  let counter := getCounterFor(contractAddr, channelId)
+  // depending on which mode the channel operates in
+  if inCounterMode(channelId):
+    // counter reflects the nth notification for the given recipient in the given channel
+    let counter := getCounterFor(recipientAddr, channelId)
+
+    // encode uint64 counter in BE and left-pad with 4 bytes of 0x00 to make 12 bytes
+    saltBytes := concat(zeros(4), uint64BigEndian(counter))
+
+  // otherwise, channel is in TxHash Mode
+  else:
+    // take first 12 bytes of tx hash (make sure to decode the hex string)
+    saltBytes := slice(hexToBytes(env.txHash), 0, 12)
 
   // ChaCha20 expects a 96-bit (12 bytes) nonce
   // take the first 12 bytes of the channel id's sha256 hash
   let channelIdBytes := slice(sha256(utf8ToBytes(channelId)), 0, 12)
 
-  // encode uint64 counter in BE and left-pad with 4 bytes of 0x00
-  let counterBytes := concat(zeros(4), uint64BigEndian(counter))
-
   // produce the nonce by XOR'ing the two previous 12-byte results
   let nonce := xorBytes(channelIdBytes, counterBytes)
 
   // construct the additional authenticated data
-  let aad := concatStrings(env.blockHeight, ":", env.senderAddress)
+  let aad := concatStrings(env.blockHeight, ":", env.txHash)
 
   // split payload
   let ciphertext := slice(payload, len(payload) - 16)
@@ -528,7 +572,9 @@ fun decryptNotificationData(contractAddr, channelId, payload, env) {
   // decrypt notification data
   let seed := getSeedFor(contractAddr)
   let message := chacha20poly1305_decrypt(key=seed, nonce=nonce, message=ciphertext, tag=tag, aad=aad)
-  let plaintext := trimTrailingZeros(message)
+
+  // do not trim trailing zeros because there is no END marker in CBOR. just decode plaintext as-is
+  let plaintext := message
 
   return plaintext
 }
