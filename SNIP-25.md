@@ -53,7 +53,7 @@ Example `Transfer` message, with optional reference to `decoys` included.
 
 ## Batch Operations
 
-Batch operations are used for handling multiple token transfers or operations in a single transaction. In the case of batch messages, the `decoys` parameter SHOULD be included with the [actions](https://github.com/scrtlabs/snip20-reference-impl/blob/ea9fb0cd76f3e0d48e86b4d02a3990f2f4a84d00/src/batch.rs#LL34C1-L40C2), rather than the messages themselves:
+[Batch operations](./SNIP-22.md) are used for handling multiple token transfers or operations in a single transaction. In the case of batch messages, the `decoys` parameter SHOULD be included with the [actions](https://github.com/scrtlabs/snip20-reference-impl/blob/ea9fb0cd76f3e0d48e86b4d02a3990f2f4a84d00/src/batch.rs#LL34C1-L40C2), rather than the messages themselves:
 
 Batch Transfer Message:
 
