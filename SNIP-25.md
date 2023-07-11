@@ -1,6 +1,6 @@
 # SNIP-25 - Improved privacy for [SNIP-20](/SNIP-20.md) tokens
 
-This document outlines updates to the SNIP-20 specification with the introduction of two new elements, known as `decoys` and `entropy`, which are designed to strengthen privacy measures by ensuring that account information remains concealed during transaction processes. This is accomplished by intermixing real accounts with 'decoy' accounts, thus making it difficult for potential attackers to discern the actual accounts being updated. Moreover, randomness is integrated into the execution messages, which offers an additional layer of protection by creating uncertainty in storage access patterns.
+This document outlines updates to the SNIP-20 specification with the introduction of `decoys`, which are designed to strengthen privacy measures by ensuring that account information remains concealed during transaction processes. This is accomplished by intermixing real accounts with 'decoy' accounts, thus making it difficult for potential attackers to discern the actual accounts being updated. Moreover, randomness is integrated into the execution messages, which offers an additional layer of protection by creating uncertainty in storage access patterns.
 
 Contracts that support the existing SNIP-20 standard are still considered
 compliant, and clients SHOULD be written so as to benefit from this feature
@@ -21,7 +21,7 @@ In order to effectively incorporate decoys, it is necessary to randomly interwea
 
 ## Messages
 
-The existing `Redeem`, `Deposit`, `Transfer`, `Send`, `Burn`, `TransferFrom`, `SendFrom`, `BurnFrom`, and `Mint` messages now SHOULD accept the `decoy` field.
+The existing `Redeem`, `Deposit`, `Transfer`, `Send`, `Burn`, `TransferFrom`, `SendFrom`, `BurnFrom`, and `Mint` messages now SHOULD accept the `decoys` field.
 
 Example `Transfer` message, with optional reference to `decoys` included.
 
