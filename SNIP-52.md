@@ -308,7 +308,7 @@ Allows clients to set a new shared secret. In order to guarantee the provided se
 
 See the [Updating Seed Algorithm](#updating-seed-algorithm) for details on how the contract should handle this message.
 
-The signed document follows the same format as query permits, but with `type` `"notification_seed"` and `value` containing two fields: `contract` and `previous_seed`:
+The signed document follows the same format as query permits, but with `type` `"notification_seed"` and `value` containing the two fields `contract` and `previous_seed`, both of which the contract will auto-populate when verifying the permit:
 ```json
 {
   "chain_id": "secret-4",
@@ -343,8 +343,6 @@ Request:
     "signed_doc": {
       "params": {
         "chain_id": "secret-4",
-        "contract": "<bech32 address of contract>",
-        "previous_seed": "<base64-encoded value of previous seed>"
       },
       "signature": {
         "pub_key": {
