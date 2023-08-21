@@ -106,7 +106,7 @@ Let's walk through a simple example, where client Alice wants to be notified nex
 
     Alice will now receive a JSONRPC message for each new execution of the contract, from which she can search for her unique Notification ID.
     
-    <!-- Alternatively, if she trusts the WebSocket server won't record her activity, she can use a filter in the `query` field of her subscription message, e.g., `wasm.ZjZjYzVhYjU4 EXISTS` . -->
+    If operating in counter mode, and Alice trusts that the WebSocket server won't record her activity, she can optionally use a filter in the `query` field of her subscription message, e.g., `wasm.ZjZjYzVhYjU4 EXISTS` .
 
 4. Some time later, Bob executes a SNIP-20 transfer of token X to Alice's account:
     ```json
@@ -152,7 +152,7 @@ In Counter Mode:
  - ✅ clients only have to recompute a channel's notification ID each time they receive a notification from that channel
  - ✅ clients are able to use node APIs such as `tx_search` to search back through history and find a missed notification
  - ✅ clients are able to query the contract to obtain their next notification ID, allowing them to bypass much of the SNIP-52 client-side implementation
- - ❌ an attacker could hypothetically de-anonymize notification IDs using a sophisticated side-chain attack
+ - ❌ an attacker could, in theory, de-anonymize notification IDs using a sophisticated [side-chain attack](https://docs.scrt.network/secret-network-documentation/overview-ecosystem-and-technology/techstack/privacy-technology/theoretical-attacks/contract-level/replay-side-chain)
 
 In TxHash Mode:
  - ✅ notifications are immune to side-chain attacks
@@ -566,7 +566,7 @@ fun decryptNotificationData(contractAddr, channelId, payload, env) {
   let aad := concatStrings(env.blockHeight, ":", env.txHash)
 
   // split payload
-  let ciphertext := slice(payload, len(payload) - 16)
+  let ciphertext := slice(payload, 0, len(payload) - 16)
   let tag := slice(payload, len(ciphertext))
 
   // decrypt notification data
