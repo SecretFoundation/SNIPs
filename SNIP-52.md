@@ -8,6 +8,7 @@ Allows clients to receive notifications when certain events within a smart contr
     * [How it works](#how-it-works-high-level)
     * [Example flow](#example-flow)
     * [Diagram](#diagram)
+* [Modes: Counter Mode vs TxHash Mode](#modes-counter-mode-vs-txhash-mode)
 * [Concepts](#concepts)
   * [Notification ID](#notification-id)
   * [Channels](#channels)
@@ -29,7 +30,6 @@ Allows clients to receive notifications when certain events within a smart contr
 * [Cryptography](#cryptography)
 * [Notification ID Algorithm](#notification-id-algorithm)
 * [Privacy Considerations](#privacy-considerations)
-  * [Decoys](#decoys)
 
 # Introduction
 
@@ -144,9 +144,9 @@ Once Alice has obtained her Notification Seed for the desired channel, she no lo
 
 # Modes: Counter Mode vs TxHash Mode
 
-Each channel can operate in one of two modes: Counter Mode, or TxHash Mode.
+Each channel can operate in one of two modes: Counter Mode, or TxHash Mode. A channel's mode should either be hardcoded or set during contract initialization. It should never change.
 
-There is a trade-off between these two modes. Counter Mode is easier for clients but less secure.
+There is a trade-off between these two modes. Counter Mode is easier on clients but less secure.
 
 In Counter Mode:
  - ✅ clients only have to recompute a channel's notification ID each time they receive a notification from that channel
@@ -158,7 +158,7 @@ In TxHash Mode:
  - ✅ notifications are immune to side-chain attacks
  - ❌ clients must recompute their notification ID for every execution tx witnessed on the given contract
 
-In summary, TxHash Mode is more secure than Counter Mode, but comes at the cost of more work for the client (although the processing heft is likely neglible). On the other hand, with Counter Mode, clients are able to easily search tx history for missed notifications, and clients can bypass computing notification IDs all-together by querying the contract.
+In summary, TxHash Mode is more secure than Counter Mode, but comes at the cost of more work for the client (although the processing heft is likely neglible). On the other hand, with Counter Mode, clients are able to easily search tx history for missed notifications, and clients can bypass computing Notification IDs altogether by querying the contract.
 
 
 # Concepts
@@ -189,7 +189,7 @@ By default, contracts derive a client's Notification Seed using an internal secr
 
 In order to generate a unique Notification ID for each subsequent event, clients and contracts MUST produce a number only used once (i.e., a nonce) as input to the hash function. They must share an understanding for how/when to increment the nonce so that clients can continue to derive new Notification IDs offline.
 
-To meet these criteria, a simple counter scheme is used to derive new nonce values, meaning that the nonce MUST increment by exactly one for each new notification. That way, clients and contracts are able to keep their nonce values in sync.
+For channels operating in [Counter Mode](#modes-counter-mode-vs-txhash-mode), a simple counter scheme is used to derive new nonce values, meaning that the nonce MUST increment by exactly one for each new notification. That way, clients and contracts are able to keep their nonce values in sync.
 
 
 ### Notification Data
@@ -633,7 +633,7 @@ Within the contract, implementations are advised to use RustCrypto's AEADs ([doc
 
 ## Privacy Considerations
 
-The following section describes a hypothetical side-chain attack. It's important however to note the similarity to attacks based on storage access patterns (i.e., spicy printf), which actually expose more private data and should therefore be considered a greater threat. In both cases, using a system of decoys is the current best mitigation in practice.
+The following section describes a hypothetical side-chain attack for channels operating in Counter Mode. However, channels operating in TxHash Mode are completely immune to this type of attack and don't require any counter-measures. Contracts should still strive to emit a consistent number of events that appear as notifications in order to mask actual events with noise.
 
 If a contract action allows _any sender_ to trigger a notification for some recipient, then there is a risk that an attacker could perform a side-chain attack to precompute a victim's next Notification ID for a specific channel within a contract.
 
@@ -643,11 +643,4 @@ Notice that the threat model looks very different if the contract only allowed f
 
 Also notice that if Alice executes the UpdateSeed method after Mallory forks the chain and before Bob transfers tokens, then Mallory's attack fails.
 
-
-### Decoys
-
-To mitigate privacy risks exposed by side-chain attacks, contracts should employ a system of decoys.
-
-Due to the fact that most vulnerable actions (e.g., transfers) tend to also be those most affected by storage access patterns, contracts should strive to emulate every part of the action with decoys.
-
-For example, when Alice transfers token 10 X to Bob, the contract should also transfer 0 token X to Charlie, and 0 token X to David, causing the full repercussions for both Charlie and David as decoy recipients. Bob, Charlie and David should all receive a new record in their transfer history, even though Charlie and David will each see that 0 tokens were transferred to their account. The purpose of updating their transfer history is to create storage access pattern noise, so that an attacker cannot deduce which recipient's balance actually changed. Similarly, Bob, Charlie and David will all receive a notification; although Charlie and David will know to ignore it when they decrypt the Notification Data and find that 0 tokens were transferred to their account.
+Again, TxHash Mode prevents this type attack, but sacrifices some of the benefits that come with predictable Notification IDs. Contract developers should consider the privacy requirements of their application when choosing which mode to use for a given channel.
