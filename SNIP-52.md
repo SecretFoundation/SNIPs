@@ -2,34 +2,40 @@
 
 Allows clients to receive notifications when certain events within a smart contract affect them. For example: token transfers, direct messaging, turn-based gaming, announcements, and so on.
 
-* [Introduction](#introduction)
-  * [Motivation](#motiviation)
-  * [Overview](#overview)
-    * [How it works](#how-it-works-high-level)
-    * [Example flow](#example-flow)
-    * [Diagram](#diagram)
-* [Modes: Counter Mode vs TxHash Mode](#modes-counter-mode-vs-txhash-mode)
-* [Concepts](#concepts)
-  * [Notification ID](#notification-id)
-  * [Channels](#channels)
-  * [Notification Seed](#notification-seed)
-  * [Internal Contract Secret](#internal-contract-secret)
-  * [Counter](#counter)
-  * [Notification Data](#notification-data)
-* [Queries and Methods](#queries-and-methods)
-  * [ListChannels Query](#listchannels-query)
-  * [ChannelInfo Query](#channelinfo-query)
-  * [UpdateSeed Method](#updateseed-method)
-* [Algorithms](#algorithms)
-  * [Contract Internal Secret Derivation](#contract-internal-secret-derivation)
-  * [Notification Seed Algorithm](#notification-seed-algorithm)
-  * [Updating Seed Algorithm](#updating-seed-algorithm)
-  * [Notification ID Algorithm](#notification-id-algorithm)
-  * [Notification Data Algorithms](#notification-data-algorithms)
-  * [Dispatch Notification Algorithm](#dispatch-notification-algorithm)
-* [Cryptography](#cryptography)
-* [Notification ID Algorithm](#notification-id-algorithm)
-* [Privacy Considerations](#privacy-considerations)
+- [SNIP-52 - Private Push Notifications](#snip-52---private-push-notifications)
+- [Introduction](#introduction)
+  - [Motivation](#motivation)
+  - [Overview](#overview)
+    - [How it works (high-level)](#how-it-works-high-level)
+    - [Example flow](#example-flow)
+    - [Diagram](#diagram)
+    - [Remarks on the above example](#remarks-on-the-above-example)
+- [Modes: Counter Mode vs TxHash Mode](#modes-counter-mode-vs-txhash-mode)
+- [Concepts](#concepts)
+    - [Notification ID](#notification-id)
+    - [Channels](#channels)
+    - [Notification Seed](#notification-seed)
+    - [Internal Contract Secret](#internal-contract-secret)
+    - [Counter](#counter)
+    - [Notification Data](#notification-data)
+      - [CBOR and CDDL](#cbor-and-cddl)
+- [Queries and Methods](#queries-and-methods)
+  - [ListChannels Query](#listchannels-query)
+  - [ChannelInfo Query](#channelinfo-query)
+  - [UpdateSeed Method](#updateseed-method)
+- [Algorithms](#algorithms)
+  - [Contract Internal Secret Derivation](#contract-internal-secret-derivation)
+  - [Notification Seed Algorithm](#notification-seed-algorithm)
+  - [Updating Seed Algorithm](#updating-seed-algorithm)
+  - [Notification ID Algorithm](#notification-id-algorithm)
+  - [Notification Data Algorithms](#notification-data-algorithms)
+  - [Dispatch Notification Algorithm](#dispatch-notification-algorithm)
+  - [Cryptography](#cryptography)
+    - [HKDF](#hkdf)
+    - [Secp256k1](#secp256k1)
+    - [HMAC-SHA256](#hmac-sha256)
+    - [ChaCha20-Poly1305](#chacha20-poly1305)
+  - [Privacy Considerations](#privacy-considerations)
 
 # Introduction
 
@@ -271,13 +277,13 @@ Response:
 
 ## ChannelInfo Query
 
-Authenticated query allows clients to obtain the seed, counter, and Notification ID of a future event, for a specific channel.
+Authenticated query allows clients to obtain the seed, counter, and Notification ID of a future event, for a specific set of channels.
 
 Query:
 ```json
 {
   "channel_info": {
-    "channel": "<id of channel>"
+    "channels": ["<id of channel>", "<...optional list of additional channel ids>"]
   }
 }
 ```
@@ -285,21 +291,24 @@ Query:
 Response:
 ```json
 {
-  "channel_info": {
-    "channel": "<same as query input>",
-    "as_of_block": "<scopes validity of this response>",
-    "seed": "<shared secret in base64>",
-    "mode": "counter",  // or "txhash"
-    "counter": "<current counter value>",  // only present in "counter" mode
-    "next_id": "<the next Notification ID>",  // only present in "counter" mode
-    "cddl": "<optional CDDL schema definition string for the CBOR-encoded notification data>"
-  }
+  "channel_info": [
+    {
+      "channel": "<channel id, corresponds to query input>",
+      "as_of_block": "<scopes validity of this response>",
+      "seed": "<shared secret in base64>",
+      "mode": "counter",  // or "txhash"
+      "counter": "<current counter value>",  // only present in "counter" mode
+      "next_id": "<the next Notification ID>",  // only present in "counter" mode
+      "cddl": "<optional CDDL schema definition string for the CBOR-encoded notification data>"
+    }, 
+    // ...additional results
+  ]
 }
 ```
 
-If the channel is operating in TxHash Mode, given by `"mode": "txhash"`, then the response includes the Notification ID of the next event in the given channel affecting the given viewer (who is specified in the authentication data, depending on whether a query permit or viewer key is used).
+If a channel is operating in TxHash Mode, given by `"mode": "txhash"`, then its response row includes the Notification ID of the next event in the given channel affecting the given viewer (who is specified in the authentication data, depending on whether a query permit or viewer key is used).
 
-The response also provides the viewer's current seed for the given channel, allowing the client to derive future Notification IDs for this channel offline (i.e., without having to query the contract again).
+The response also provides the viewer's current seed for each given channel, allowing the client to derive future Notification IDs for this channel offline (i.e., without having to query the contract again).
 
 
 ## UpdateSeed Method
