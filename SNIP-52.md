@@ -291,18 +291,20 @@ Query:
 Response:
 ```json
 {
-  "channel_info": [
-    {
-      "channel": "<channel id, corresponds to query input>",
-      "as_of_block": "<scopes validity of this response>",
-      "seed": "<shared secret in base64>",
-      "mode": "counter",  // or "txhash"
-      "counter": "<current counter value>",  // only present in "counter" mode
-      "next_id": "<the next Notification ID>",  // only present in "counter" mode
-      "cddl": "<optional CDDL schema definition string for the CBOR-encoded notification data>"
-    }, 
-    // ...additional results
-  ]
+  "channel_info": {
+    "seed": "<shared secret in base64>",
+    "as_of_block": "<scopes validity of this response>",
+    "channels": [
+      {
+        "channel": "<channel id, corresponds to query input>",
+        "mode": "counter",  // or "txhash"
+        "counter": "<current counter value>",  // only present in "counter" mode
+        "next_id": "<the next Notification ID>",  // only present in "counter" mode
+        "cddl": "<optional CDDL schema definition string for the CBOR-encoded notification data>"
+      }, 
+      // ...additional results
+    ]
+  }
 }
 ```
 
