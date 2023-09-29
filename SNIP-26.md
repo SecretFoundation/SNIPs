@@ -1,24 +1,7 @@
----
-snip: SNIP-26
-title: Allowances queries
-author: Blake Regalia (@blake-regalia), Ben Adams (@darwinzer0)
-status: Draft
-type: Informational
-created: 2023-04-28
-requires: SNIP-20, SNIP-21, SNIP-22, SNIP-23, SNIP-24, SNIP-25
----
-
-## Simple Summary
+# SNIP-26 - Allowance queries for SNIP-20 tokens
 
 This document describes two new queries for SNIP-20 tokens: `AllowancesGiven` and `AllowancesReceived`. These queries give the ability for an owner to query for all allowances they have given out, and for a spender to query for all allowances they have received, respectively.
 
-## Motivation
-
-The idea has been discussed several times before but was met with hesitation due to the lack of an efficient implementation. This has been implemented in a manner that avoids any of the storage drawbacks brought up in prior discussion, which largely stemmed from how allowances were being stored in earlier reference implementations. 
-
-https://github.com/SecretFoundation/SNIPs/pull/13
-https://github.com/scrtlabs/snip20-reference-impl/pull/76
-https://github.com/scrtlabs/snip20-reference-impl/issues/58
 
 ## Queries
 
@@ -32,11 +15,11 @@ Results SHOULD be paginated. Results MUST be sorted in reverse chronological ord
 
 ##### Request
 
-| Name | Type | Description | optional |
-|------|------|-------------|----------|
-| [with_permit].query.allowances_given.owner | string | Account from which tokens are allowed to be taken | no |
-| [with_permit].query.allowances_given.page_size | number | Number of allowances to return, starting from the latest. i.e. n=1 will return only the latest allowance | no |
-| [with_permit].query.allowances_given.page | number | Defaults to 0. Specifying a positive number will skip page * page_size txs from the start. | yes |
+| Name      | Type   | Description | optional |
+|-----------|--------|-------------|----------|
+| owner     | string | Account from which tokens are allowed to be taken | no |
+| page_size | number | Number of allowances to return, starting from the latest. i.e. n=1 will return only the latest allowance | no |
+| page      | number | Defaults to 0. Specifying a positive number will skip page * page_size txs from the start. | yes |
 
 ##### Response
 
@@ -67,11 +50,11 @@ Results SHOULD be paginated. Results MUST be sorted in reverse chronological ord
 
 ##### Request
 
-| Name | Type | Description | optional |
-|------|------|-------------|----------|
-| [with_permit.]query.allowances_received.spender | string | Account which is allowed to spend tokens on behalf of the _owner_ | no |
-| [with_permit.]query.allowances_received.page_size | number | Number of allowances to return, starting from the latest. i.e. n=1 will return only the latest allowance | no |
-| [with_permit.]query.allowances_received.page | number | Defaults to 0. Specifying a positive number will skip page * page_size txs from the start. | yes |
+| Name      | Type   | Description | optional |
+|-----------|--------|-------------|----------|
+| spender   | string | Account which is allowed to spend tokens on behalf of the _owner_ | no |
+| page_size | number | Number of allowances to return, starting from the latest. i.e. n=1 will return only the latest allowance | no |
+| page      | number | Defaults to 0. Specifying a positive number will skip page * page_size txs from the start. | yes |
 
 ##### Response
 
@@ -94,7 +77,4 @@ Results SHOULD be paginated. Results MUST be sorted in reverse chronological ord
 
 ## Considerations
 
-In order for pre-existing SNIP-20s to upgrade (once that feature is implemented in Secret Network), a CosmWasm `migrate` handler must be used since the allowances data struct is changed. 
-
-## Copyright
-Copyright and related rights waived via [CC0](https://creativecommons.org/publicdomain/zero/1.0).
+In order for pre-existing SNIP-20s to upgrade, a CosmWasm `migrate` handler must be used since the allowances data struct is changed. 
