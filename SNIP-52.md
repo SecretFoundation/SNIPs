@@ -392,7 +392,7 @@ Response:
 </details
 
 
-If a channel is operating in TxHash Mode, given by `"mode": "txhash"`, then its response row includes the Notification ID of the next event in the given channel affecting the given viewer (who is specified in the authentication data, depending on whether a query permit or viewer key is used).
+If a channel is operating in Counter Mode, given by `"mode": "counter"`, then its response row includes the current counter value (under the `counter` key) and the Notification ID (under the `next_id` key) corresponding to the next event in the given channel affecting the current viewer (who was specified in the query authentication data, depending on whether a query permit or ViewerInfo was used).
 
 The response also provides the viewer's current seed for each given channel, allowing the client to derive future Notification IDs for this channel offline (i.e., without having to query the contract again).
 
