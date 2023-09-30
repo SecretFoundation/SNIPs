@@ -453,10 +453,11 @@ Query:
   ```
 </details
 
-| Name   | Type                                            | Description                                   | Optional | Value If Omitted |
-|--------|-------------------------------------------------|-----------------------------------------------|----------|------------------|
-| permit | [Permit](SNIP-24.md#WithPermit)                 | A permit following SNIP-24 standard           | no       |                  |
-| query  | [QueryWithPermit (see below)](#QueryWithPermit) | The query to perform and its input parameters | no       |                  |
+| Name   | Type                                            | Description                                   | Optional |
+|--------|-------------------------------------------------|-----------------------------------------------|----------|
+| permit | [Permit](SNIP-24.md#WithPermit)                 | A permit following SNIP-24 standard           | no       |
+| query  | [QueryWithPermit (see below)](#QueryWithPermit) | The query to perform and its input parameters | no       |
+
 
 #### QueryWithPermit
 QueryWithPermit is an enum whose single variant correlates with the SNIP-52 query that requires authentication ([ChannelInfo](#channelinfo-query)). The input parameters are the same as the corresponding query other than the absence of [ViewerInfo](#viewerinfo) because the permit supplied with the `WithPermit` query provides both the address and authentication.
