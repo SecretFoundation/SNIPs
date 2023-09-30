@@ -318,7 +318,7 @@ Query:
   <summary>Show TypeScript equivalent</summary>
 
   ```ts
-  type ChannelInfoExecMsg = {
+  type ChannelInfoQueryMsg = {
     channels: string[];
   };
   ```
@@ -349,7 +349,7 @@ Response:
   <summary>Show TypeScript equivalent</summary>
 
   ```ts
-  type ChannelInfoExecResponse = {
+  type ChannelInfoQueryResponse = {
     as_of_block: string;  // uint64
     channels: ChannelInfo[];
   };
