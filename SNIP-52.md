@@ -22,6 +22,9 @@ Allows clients to receive notifications when certain events within a smart contr
 - [Queries and Methods](#queries-and-methods)
   - [ListChannels Query](#listchannels-query)
   - [ChannelInfo Query](#channelinfo-query)
+  - [WithPermit Query](#withpermit-query)
+      - [QueryWithPermit](#querywithpermit)
+        - [WithPermit `query` Parameter](#withpermit-query-parameter)
   - [UpdateSeed Method](#updateseed-method)
 - [Algorithms](#algorithms)
   - [Contract Internal Secret Derivation](#contract-internal-secret-derivation)
@@ -309,7 +312,11 @@ Query:
 ```json
 {
   "channel_info": {
-    "channels": ["<id of channel>", "<...optional list of additional channel ids>"]
+    "channels": ["<id of channel>", "<...optional list of additional channel ids>"],
+		"viewer": {
+			"address": "address_of_the_querier_if_supplying_optional_ViewerInfo",
+			"viewing_key": "viewer's_key_if_supplying_optional_ViewerInfo"
+		}
   }
 }
 ```
@@ -320,9 +327,18 @@ Query:
   ```ts
   type ChannelInfoQueryMsg = {
     channels: string[];
+    viewer?: {
+      address: string;  // bech32
+      viewing_key: string;
+    };
   };
   ```
 </details>
+
+| Name     | Type                                 | Description                                                         | Optional | Value If Omitted |
+|----------|--------------------------------------|---------------------------------------------------------------------|----------|------------------|
+| channels | array of string                      | A list of channel IDs                  | yes      | nothing          |
+| viewer   | [ViewerInfo](SNIP-721.md#viewerinfo) | The address and viewing key performing this query                   | yes      | nothing          |
 
 
 Response:
@@ -372,6 +388,84 @@ Response:
 If a channel is operating in TxHash Mode, given by `"mode": "txhash"`, then its response row includes the Notification ID of the next event in the given channel affecting the given viewer (who is specified in the authentication data, depending on whether a query permit or viewer key is used).
 
 The response also provides the viewer's current seed for each given channel, allowing the client to derive future Notification IDs for this channel offline (i.e., without having to query the contract again).
+
+
+## WithPermit Query
+
+SNIP-52 contracts may optionally implement query permits as specified in [SNIP-24](SNIP-24.md).
+
+WithPermit wraps permit queries in the [same manner](SNIP-24.md#WithPermit) as SNIP-24.
+
+Query:
+```json
+{
+  "with_permit": {
+    "permit": {
+      "params": {
+        "permit_name": "some_name",
+        "allowed_tokens": ["addr_1", "addr_2", "..."],
+        "chain_id": "some_chain_id",
+        "permissions": ["owner"]
+      },
+      "signature": {
+        "pub_key": {
+          "type": "tendermint/PubKeySecp256k1",
+          "value": "33_bytes_of_secp256k1_pubkey_as_base64"
+        },
+        "signature": "64_bytes_of_secp256k1_signature_as_base64"
+      }
+    },
+    "query": {
+      "QueryWithPermit_variant_defined_below": { "...": "..." }
+    }
+  }
+}
+```
+
+<details>
+  <summary>Show TypeScript equivalent</summary>
+
+  ```ts
+  type WithPermitQuery = {
+    permit: {
+      params: {
+        permit_name: string;
+        allowed_tokens: string[];  // bech32s
+        chain_id: string;
+        permissions: string[];
+      };
+      signature: {
+        type: "tendermint/PubKeySecp256k1";
+        value: string;  // base64
+      };
+    };
+    query: Omit<AuthenticatedQueries, "viewer">;
+  };
+
+  type AuthenticatedQueries = ChannelInfoQueryMsg;
+  ```
+</details
+
+| Name   | Type                                            | Description                                   | Optional | Value If Omitted |
+|--------|-------------------------------------------------|-----------------------------------------------|----------|------------------|
+| permit | [Permit](SNIP-24.md#WithPermit)                 | A permit following SNIP-24 standard           | no       |                  |
+| query  | [QueryWithPermit (see below)](#QueryWithPermit) | The query to perform and its input parameters | no       |                  |
+
+#### QueryWithPermit
+QueryWithPermit is an enum whose single variant correlates with the SNIP-52 query that requires authentication ([ChannelInfo](#channelinfo-query)). The input parameters are the same as the corresponding query other than the absence of [ViewerInfo](#viewerinfo) because the permit supplied with the `WithPermit` query provides both the address and authentication.
+
+* ChannelInfo ([corresponding query](#channelinfo-query))
+##### WithPermit `query` Parameter
+```json
+{
+  "query": {
+    "channel_info": {
+      "channels": ["<id of channel>", "<...optional list of additional channel ids>"],
+    }
+  }
+}
+```
+
 
 
 ## UpdateSeed Method
