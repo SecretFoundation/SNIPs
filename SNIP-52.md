@@ -264,6 +264,17 @@ Query:
 }
 ```
 
+<details>
+  <summary>Show TypeScript equivalent</summary>
+
+  ```ts
+  type ListChannelsQueryMsg = {
+    list_channels: {};
+  };
+  ```
+</details>
+
+
 Response:
 ```json
 {
@@ -277,6 +288,19 @@ Response:
 }
 ```
 
+<details>
+  <summary>Show TypeScript equivalent</summary>
+
+  ```ts
+  type ListChannelsQueryResponse = {
+    list_channels: {
+      channels: string[];
+    };
+  };
+  ```
+</details>
+
+
 ## ChannelInfo Query
 
 Authenticated query allows clients to obtain the seed, counter, and Notification ID of a future event, for a specific set of channels.
@@ -289,6 +313,17 @@ Query:
   }
 }
 ```
+
+<details>
+  <summary>Show TypeScript equivalent</summary>
+
+  ```ts
+  type ChannelInfoExecMsg = {
+    channels: string[];
+  };
+  ```
+</details>
+
 
 Response:
 ```json
@@ -309,6 +344,30 @@ Response:
   }
 }
 ```
+
+<details>
+  <summary>Show TypeScript equivalent</summary>
+
+  ```ts
+  type ChannelInfoExecResponse = {
+    as_of_block: string;  // uint64
+    channels: [ChannelInfo<"snip_53">, ...ChannelInfo[]];
+  };
+
+  type ChannelInfo<id extends string> = {
+    channel: id;
+    seed: string;  // base64
+    cddl?: string;  // cddl
+  } & ({
+    mode: "counter";
+    counter: string;  // uint64
+    next_id: string;
+  } | {
+    mode: "txhash";
+  });
+  ```
+</details
+
 
 If a channel is operating in TxHash Mode, given by `"mode": "txhash"`, then its response row includes the Notification ID of the next event in the given channel affecting the given viewer (who is specified in the authentication data, depending on whether a query permit or viewer key is used).
 
@@ -369,6 +428,30 @@ Request:
 }
 ```
 
+<details>
+  <summary>Show TypeScript equivalent</summary>
+
+  ```ts
+  type UpdateSeedExecMsg = {
+    update_seed: {
+      signed_doc: {
+        params: {
+          chain_id: string;
+        };
+      };
+      signature: {
+        pub_key: {
+          type: "tendermint/PubKeySecp256k1";
+          value: string;  // base64
+        };
+        signature: string;  // base64
+      };
+    };
+  };
+  ```
+</details
+
+
 Response:
 ```json
 {
@@ -377,6 +460,18 @@ Response:
   }
 }
 ```
+
+<details>
+  <summary>Show TypeScript equivalent</summary>
+
+  ```ts
+  type UpdateSeedExecResponse = {
+    update_seed: {
+      seed: string;  // base64
+    };
+  };
+  ```
+</details
 
 
 # Algorithms
