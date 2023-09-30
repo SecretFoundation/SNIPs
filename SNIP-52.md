@@ -335,10 +335,10 @@ Query:
   ```
 </details>
 
-| Name     | Type                                 | Description                                       | Optional | Value If Omitted |
-|----------|--------------------------------------|---------------------------------------------------|----------|------------------|
-| channels | array of strings                     | A list of channel IDs                             | yes      | nothing          |
-| viewer   | [ViewerInfo](SNIP-721.md#viewerinfo) | The address and viewing key performing this query | no       |                  |
+| Name     | Type                                 | Description                                       | Optional |
+|----------|--------------------------------------|---------------------------------------------------|----------|
+| channels | array of strings                     | A list of channel IDs                             | no       |
+| viewer   | [ViewerInfo](SNIP-721.md#viewerinfo) | The address and viewing key performing this query | no       |
 
 
 Response:
