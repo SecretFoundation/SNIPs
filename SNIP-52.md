@@ -389,7 +389,7 @@ Response:
     mode: "txhash";
   });
   ```
-</details
+</details>
 
 
 If a channel is operating in Counter Mode, given by `"mode": "counter"`, then its response row includes the current counter value (under the `counter` key) and the next Notification ID (under the `next_id` key) corresponding to the given channel affecting the current viewer (who was specified in the query authentication data, depending on whether a query permit or ViewerInfo was used).
@@ -451,7 +451,7 @@ Query:
 
   type AuthenticatedQueries = ChannelInfoQueryMsg;
   ```
-</details
+</details>
 
 | Name   | Type                                            | Description                                   | Optional |
 |--------|-------------------------------------------------|-----------------------------------------------|----------|
@@ -551,7 +551,7 @@ Request:
     };
   };
   ```
-</details
+</details>
 
 
 Response:
@@ -573,7 +573,7 @@ Response:
     };
   };
   ```
-</details
+</details>
 
 
 # Algorithms
