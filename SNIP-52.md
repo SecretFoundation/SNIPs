@@ -351,11 +351,11 @@ Response:
   ```ts
   type ChannelInfoExecResponse = {
     as_of_block: string;  // uint64
-    channels: [ChannelInfo<"snip_53">, ...ChannelInfo[]];
+    channels: ChannelInfo[];
   };
 
-  type ChannelInfo<id extends string> = {
-    channel: id;
+  type ChannelInfo = {
+    channel: string;
     seed: string;  // base64
     cddl?: string;  // cddl
   } & ({
