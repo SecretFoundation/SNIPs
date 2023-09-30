@@ -859,15 +859,19 @@ direct_message = [
 
 In CBOR, the maximum value of `uint` is 64 bits (8 bytes), and `text` (or `tstr`) does not have an inherent limit. In order to achieve constant-length notification data, we need to enforce a maximum size for the `contents` member of this tuple.
 
-Assuming we set a maximum byte length of 128 bytes per direct message contents, then we can calculate the maximum size of a notification data's plaintext as follows:
+Assuming we set a maximum byte length of 128 bytes per direct message contents, we can then calculate the maximum size of a notification data's plaintext as follows:
 ```
-  + 8 bytes  ; id
-  + 8 bytes  ; replying_to
-  + 128 bytes  ; contents
-= 144 bytes  ; plaintext size
+  + 1 byte  ; cbor array length < 24
+  + 1 byte  ; uint type
+  + 8 bytes  ; id value
+  + 1 bytes  ; uint type
+  + 8 bytes  ; replying_to value
+  + 2 bytes   ; text string length >= 24 and < 255
+  + 128 bytes  ; contents value
+= 149 bytes  ; plaintext size
 ```
 
-Finally, in the [Notification Data Algorithms](#notification-data-algorithms) pseudocode, we would set `DATA_LEN` to `144` bytes. This ensures that the "direct_message" channel always emits a constant-length attribute value.
+Finally, in the [Notification Data Algorithms](#notification-data-algorithms) pseudocode, we would set `DATA_LEN` to `149` bytes. This ensures that the "direct_message" channel always emits a constant-length attribute value.
 
 > NOTE: even if a channel is only using `uint`, padding still applies since CBOR will use the shortest possible encoding.
 
