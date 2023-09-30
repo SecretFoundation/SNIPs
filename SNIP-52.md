@@ -313,10 +313,10 @@ Query:
 {
   "channel_info": {
     "channels": ["<id of channel>", "<...optional list of additional channel ids>"],
-		"viewer": {
-			"address": "address_of_the_querier_if_supplying_optional_ViewerInfo",
-			"viewing_key": "viewer's_key_if_supplying_optional_ViewerInfo"
-		}
+    "viewer": {
+      "address": "address_of_the_querier_if_supplying_optional_ViewerInfo",
+      "viewing_key": "viewer's_key_if_supplying_optional_ViewerInfo"
+    }
   }
 }
 ```
