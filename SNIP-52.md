@@ -39,6 +39,9 @@ Allows clients to receive notifications when certain events within a smart contr
     - [HMAC-SHA256](#hmac-sha256)
     - [ChaCha20-Poly1305](#chacha20-poly1305)
   - [Privacy Considerations](#privacy-considerations)
+    - [Padding: Constant-Length Notification Data](#padding-constant-length-notification-data)
+    - [Decoy Notifications: Constant Log Size](#decoy-notifications-constant-log-size)
+    - [Hypothetical Attack in Counter Mode](#hypothetical-attack-in-counter-mode)
 
 # Introduction
 
@@ -475,7 +478,6 @@ QueryWithPermit is an enum whose single variant correlates with the SNIP-52 quer
 ```
 
 
-
 ## UpdateSeed Method
 
 Allows clients to set a new shared secret. In order to guarantee the provided secret has high entropy, clients must submit a signed document params and signature to be verified before the new shared secret (a SHA-256 hash of the signature) is accepted.
@@ -840,6 +842,82 @@ Within the contract, implementations are advised to use RustCrypto's AEADs ([doc
 
 
 ## Privacy Considerations
+
+
+### Padding: Constant-Length Notification Data
+
+Contracts SHOULD pad the value of the encrypted attribute added to the event log (i.e., the [Notification Data](#notification-data)) to some constant length per channel.
+
+For example, consider a "direct_message" channel with the following CDDL:
+```cddl
+direct_message = [
+  id: uint,
+  replying_to: uint,
+  contents: text,
+]
+```
+
+In CBOR, the maximum value of `uint` is 64 bits (8 bytes), and `text` (or `tstr`) does not have an inherent limit. In order to achieve constant-length notification data, we need to enforce a maximum size for the `contents` member of this tuple.
+
+Assuming we set a maximum byte length of 128 bytes per direct message contents, then we can calculate the maximum size of a notification data's plaintext as follows:
+```
+  + 8 bytes  ; id
+  + 8 bytes  ; replying_to
+  + 128 bytes  ; contents
+= 144 bytes  ; plaintext size
+```
+
+Finally, in the [Notification Data Algorithms](#notification-data-algorithms) pseudocode, we would set `DATA_LEN` to `144` bytes. This ensures that the "direct_message" channel always emits a constant-length attribute value.
+
+> NOTE: even if a channel is only using `uint`, padding still applies since CBOR will use the shortest possible encoding.
+
+
+### Decoy Notifications: Constant Log Size
+
+Contracts SHOULD emit a constant number of attributes to the event log on every execution in order to conceal which transactions emitted notification(s) versus those that didn't.
+
+For example, if a contract employs three distinct notification channels, then every transaction should result in three key-value attributes being added to the event log (e.g., by calling `add_attribute_plaintext(...)` three times) no matter what the execution message was (and therefore no matter how many actual notifications were emitted).
+
+When emitting decoy notifications, it is recommended to use all NULL bytes as the notification data and the Secret Network burn address `secret1988uvdmz2kncg50wkjcjnmvw4nl69lh0svtw3x` as the recipient, which corresponds to the public key `0x000000000000000000000000000000000000000000000000000000000000000000` (33 zero-valued bytes) -- for which there cannot possibly exist a private key. This can be reproduced using the following bash snippet:
+
+```bash
+# generate an entirely zero-valued 33-byte string in hex (66 zeros) for the public key
+PUBLIC_KEY_HEX=$(printf '0%.0s' {1..66})
+echo "PUBLIC_KEY_HEX=0x${PUBLIC_KEY_HEX}"
+
+# convert into base64
+PUBLIC_KEY_BASE64=$(echo "$PUBLIC_KEY_HEX" | xxd -r -p | base64)
+echo "PUBLIC_KEY_BASE64=${PUBLIC_KEY_BASE64}"
+
+# use secretcli to create raw address bytes from the public key
+ADDR_BASE64=$(secretcli debug pubkey '{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"'"$PUBLIC_KEY_BASE64"'"}' | grep "Address:" | awk '{print $2'})
+echo "ADDR_BASE64=${ADDR_BASE64}"
+
+# finally, convert the address bytes to bech32
+ADDR_BECH32=$(secretcli debug addr "${ADDR_BASE64}" | grep "Bech32 Acc:" | awk '{print $3}')
+echo "ADDR_BECH32=${ADDR_BECH32}"
+
+echo ""
+echo "$ADDR_BECH32"
+```
+
+Which should result in the following output:
+```console
+PUBLIC_KEY_HEX=0x000000000000000000000000000000000000000000000000000000000000000000
+PUBLIC_KEY_BASE64=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+ADDR_BASE64=29CFC6376255A78451EEB4B129ED8EACFFA2FEEF
+ADDR_BECH32=secret1988uvdmz2kncg50wkjcjnmvw4nl69lh0svtw3x
+```
+
+In Rust, this burn address can be declared as follows:
+```rust
+use cosmwasm_std::CanonicalAddr;
+
+pub const BURN_ADDRESS: CanonicalAddr = CanonicalAddr::from_hex("29CFC6376255A78451EEB4B129ED8EACFFA2FEEF")
+```
+
+
+### Hypothetical Attack in Counter Mode
 
 The following section describes a hypothetical side-chain attack for channels operating in Counter Mode. However, channels operating in TxHash Mode are completely immune to this type of attack and don't require any counter-measures. Contracts should still strive to emit a consistent number of events that appear as notifications in order to mask actual events with noise.
 
