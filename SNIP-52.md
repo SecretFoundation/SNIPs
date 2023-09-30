@@ -1,6 +1,6 @@
 # SNIP-52 - Private Push Notifications
 
-Allows clients to receive notifications when certain events within a smart contract affect them. For example: token transfers, direct messaging, turn-based gaming, announcements, and so on.
+Allows clients to receive notifications when certain events within a smart contract affect them. For example: token transfers, direct messaging, turn-based gaming, and so on.
 
 - [SNIP-52 - Private Push Notifications](#snip-52---private-push-notifications)
 - [Introduction](#introduction)
