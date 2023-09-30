@@ -342,6 +342,7 @@ Query:
 
 
 Response:
+> NOTE: The shape of each item in the `channels` array depends on its `mode` value (either `"txhash"` or `"counter"`). See below for more details.
 ```json
 {
   "channel_info": {
@@ -350,12 +351,18 @@ Response:
       {
         "channel": "<channel id, corresponds to query input>",
         "seed": "<shared secret in base64>",
-        "mode": "counter",  // or "txhash"
-        "counter": "<current counter value>",  // only present in "counter" mode
-        "next_id": "<the next Notification ID>",  // only present in "counter" mode
+        "mode": "txhash",
         "cddl": "<optional CDDL schema definition string for the CBOR-encoded notification data>"
-      }, 
-      // ...additional results
+      },
+      {
+        "channel": "<channel id, corresponds to query input>",
+        "seed": "<shared secret in base64>",
+        "mode": "counter",
+        "counter": "<current counter value>",
+        "next_id": "<the next Notification ID>",
+        "cddl": "<optional CDDL schema definition string for the CBOR-encoded notification data>"
+      },
+      { "...": "..." }
     ]
   }
 }
