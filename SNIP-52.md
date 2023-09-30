@@ -314,8 +314,8 @@ Query:
   "channel_info": {
     "channels": ["<id of channel>", "<...optional list of additional channel ids>"],
     "viewer": {
-      "address": "address_of_the_querier_if_supplying_optional_ViewerInfo",
-      "viewing_key": "viewer's_key_if_supplying_optional_ViewerInfo"
+      "address": "address_of_the_querier",
+      "viewing_key": "viewer's_key"
     }
   }
 }
@@ -327,7 +327,7 @@ Query:
   ```ts
   type ChannelInfoQueryMsg = {
     channels: string[];
-    viewer?: {
+    viewer: {
       address: string;  // bech32
       viewing_key: string;
     };
@@ -335,10 +335,10 @@ Query:
   ```
 </details>
 
-| Name     | Type                                 | Description                                                         | Optional | Value If Omitted |
-|----------|--------------------------------------|---------------------------------------------------------------------|----------|------------------|
-| channels | array of string                      | A list of channel IDs                  | yes      | nothing          |
-| viewer   | [ViewerInfo](SNIP-721.md#viewerinfo) | The address and viewing key performing this query                   | yes      | nothing          |
+| Name     | Type                                 | Description                                       | Optional | Value If Omitted |
+|----------|--------------------------------------|---------------------------------------------------|----------|------------------|
+| channels | array of strings                     | A list of channel IDs                             | yes      | nothing          |
+| viewer   | [ViewerInfo](SNIP-721.md#viewerinfo) | The address and viewing key performing this query | no       |                  |
 
 
 Response:
