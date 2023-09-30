@@ -76,7 +76,7 @@ Let's walk through a simple example, where client Alice wants to be notified nex
     ```json
     {
       "channel_info": {
-        "channel": "transfers"
+        "channels": ["transfers"]
       }
     }
     ```
@@ -84,13 +84,15 @@ Let's walk through a simple example, where client Alice wants to be notified nex
 2. The contract responds:
     ```json
     {
-      "channel_info": {
-        "channel": "transfers",
-        "seed": "ecc7f60418aa",
-        "counter": "3",
-        "next_id": "ZjZjYzVhYjU4",
-        "as_of_block": "1131420"
-      }
+      "as_of_block": "1131420",
+      "channel_info": [
+         {
+           "channel": "transfers",
+           "seed": "ecc7f60418aa",
+           "counter": "3",
+           "next_id": "ZjZjYzVhYjU4"
+         }
+      ]
     }
     ```
 
@@ -292,11 +294,11 @@ Response:
 ```json
 {
   "channel_info": {
-    "seed": "<shared secret in base64>",
     "as_of_block": "<scopes validity of this response>",
     "channels": [
       {
         "channel": "<channel id, corresponds to query input>",
+        "seed": "<shared secret in base64>",
         "mode": "counter",  // or "txhash"
         "counter": "<current counter value>",  // only present in "counter" mode
         "next_id": "<the next Notification ID>",  // only present in "counter" mode
