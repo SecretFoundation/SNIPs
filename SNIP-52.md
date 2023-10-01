@@ -882,43 +882,9 @@ Contracts SHOULD emit a constant number of attributes to the event log on every 
 
 For example, if a contract employs three distinct notification channels, then every transaction should result in three key-value attributes being added to the event log (e.g., by calling `add_attribute_plaintext(...)` three times) no matter what the execution message was (and therefore no matter how many actual notifications were emitted).
 
-When emitting decoy notifications, it is recommended to use all NULL bytes as the notification data and the Secret Network burn address `secret1988uvdmz2kncg50wkjcjnmvw4nl69lh0svtw3x` as the recipient, which corresponds to the public key `0x000000000000000000000000000000000000000000000000000000000000000000` (33 zero-valued bytes) -- for which there cannot possibly exist a private key. This can be reproduced using the following bash snippet:
+When emitting decoy notifications, it is recommended to use all NULL bytes (up to `DATA_LEN`) as the notification data and the contract's own address as the recipient.
 
-```bash
-# generate an entirely zero-valued 33-byte string in hex (66 zeros) for the public key
-PUBLIC_KEY_HEX=$(printf '0%.0s' {1..66})
-echo "PUBLIC_KEY_HEX=0x${PUBLIC_KEY_HEX}"
-
-# convert into base64
-PUBLIC_KEY_BASE64=$(echo "$PUBLIC_KEY_HEX" | xxd -r -p | base64)
-echo "PUBLIC_KEY_BASE64=${PUBLIC_KEY_BASE64}"
-
-# use secretcli to create raw address bytes from the public key
-ADDR_BASE64=$(secretcli debug pubkey '{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"'"$PUBLIC_KEY_BASE64"'"}' | grep "Address:" | awk '{print $2'})
-echo "ADDR_BASE64=${ADDR_BASE64}"
-
-# finally, convert the address bytes to bech32
-ADDR_BECH32=$(secretcli debug addr "${ADDR_BASE64}" | grep "Bech32 Acc:" | awk '{print $3}')
-echo "ADDR_BECH32=${ADDR_BECH32}"
-
-echo ""
-echo "$ADDR_BECH32"
-```
-
-Which should result in the following output:
-```console
-PUBLIC_KEY_HEX=0x000000000000000000000000000000000000000000000000000000000000000000
-PUBLIC_KEY_BASE64=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-ADDR_BASE64=29CFC6376255A78451EEB4B129ED8EACFFA2FEEF
-ADDR_BECH32=secret1988uvdmz2kncg50wkjcjnmvw4nl69lh0svtw3x
-```
-
-In Rust, this burn address can be declared as follows:
-```rust
-use cosmwasm_std::CanonicalAddr;
-
-pub const BURN_ADDRESS: CanonicalAddr = CanonicalAddr::from_hex("29CFC6376255A78451EEB4B129ED8EACFFA2FEEF")
-```
+Furthermore, it is advised to emit decoy notifications as if the channel was operating in TxHash Mode, so that an attacker cannot possibly deduce that a notification is a decoy. Emitting decoy notifications in TxHash mode also has the added benefit of not needing to store/update a counter variable.
 
 
 ### Hypothetical Attack in Counter Mode
