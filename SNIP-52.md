@@ -90,15 +90,19 @@ Let's walk through a simple example, where client Alice wants to be notified nex
 2. The contract responds:
     ```json
     {
-      "as_of_block": "1131420",
-      "channel_info": [
-         {
-           "channel": "transfers",
-           "seed": "ecc7f60418aa",
-           "counter": "3",
-           "next_id": "ZjZjYzVhYjU4"
-         }
-      ]
+      "channel_info": {
+        "as_of_block": "1131420",
+        "channels": [
+          {
+            "channel": "transfers",
+            "mode": "counter",
+            "seed": "ecc7f60418aa",
+            "counter": "3",
+            "next_id": "ZjZjYzVhYjU4",
+            "cddl": "transfers=[amount:biguint,sender:bstr]"
+          }
+        ]
+      }
     }
     ```
 
