@@ -9,62 +9,30 @@ created: 2023-04-28
 
 # SNIP-50 - Evaporation: Wasm Execution Gas Privacy
 
-This feature is conceptually similar to the `padding` field; it allows clients to parameterize their message in order to mitigate data leaking through the publicly viewable execution metadata. Whereas `padding` is used to fill the length of encrypted messages, evaporation is used to fill the resultant `gas_used` field of execution transaction results.
+This document describes a specification for contracts to implement, as well as a set of best practices to use, in order to protect users' privacy when executing.
+
+**Evaporation** is a concept that was introduced to overcome privacy risks associated with the publicly viewable `gas_used` field in transaction results' metadata. Evaporation refers to the practice of deliberately consuming extra gas during execution in order to pad the `gas_used` amount before it leaves the enclave.
+
+With evaporation, clients can now instruct contracts on exactly how much gas their execution should consume, yielding a consistent `gas_used` across all methods. Evaporation is similar to the `padding` field in this regard; it allows clients to parameterize their message in order to mitigate data leaking through the publicly viewable execution metadata. Whereas `padding` is used to fill the length of encrypted messages, _evaporation_ is used to fill the `gas_used` field.
+
 
 ## Rationale
 
-The public `gas_used` result of a contract execution leaks data about the code path taken.
+The public `gas_used` field of a contract execution result's metadata leaks information about the code path taken.
 
 As a simple example, an attacker could use the `gas_used` information to distinguish between the following SNIP-2x execution methods with high confidence: `create_viewing_key`, `set_viewing_key`, `increase_allowance`/`decrease_allowance`, `send`/`transfer`, `revoke_permit`, and so on.
 
 In some cases, an attacker could narrow or even deduce the range of possible values that certain arguments or storage items held during execution.
 
-The proposed solution introduces two new API functions, contract interface, and set of best practices. This approach prevents leaking `gas_used` to nodes as well since all evaporation takes place within the enclave.
 
-## Evaporation
+# Specification
 
-We introduce the concept of "evaporation", by which excess gas is deliberately and deterministically consumed during execution in order to pad the `gas_used`.
+## Evaporation via `gas_target`
 
-Users may include an optional `evaporate` field in every message. The value of the field should be an integer that specifies an arbitrary multiplier for some fixed-cost operation.
+SNIP-50 compliant contracts MUST support the option for users to include a `gas_target` field in every message. The value of the field is a `u32` that specifies the target quantity of CosmWasm gas for the contract to reach by the end of its execution.
 
-Using evaporation, wallets can compute a precise target gas to provide as input during execution in order to produce a `gas_used` value that effectively obscures the nature of the transaction.
 
-## API functions
-
-#### `check_gas`
-
-This API function returns the current amount of CosmWasm gas used as a `u64` and is called in a contract with `deps.api.check_gas()?`.
-
-#### `evaporate_gas`
-
-This API function burns a fixed amount of CosmWasm gas and is called in a contract with `deps.api.evaporate_gas(amount)?`, where `amount` is a `u32` value indicating the amount of gas to be used.
-
-Together these API functions can be used to evaporate a calculated amount of left over gas at the end of the contract execution.
-
-## Parameterized gas target approach
-
-If we want to have an `ExecuteMsg` that uses an exact amount of gas that is set by a `gas_target` parameter you can do the following:
-
-```rust
-  ExecuteMsg::UseExact { gas_target } => {
-    // other code added here
-
-    let gas_used: u64 = deps.api.check_gas()?;
-
-    let to_evaporate = gas_target - gas_used as u32;
-
-    deps.api.gas_evaporate(to_evaporate)?;
-
-    Ok(Response::default())
-  }
-```
-
-Adding an optional `gas_target` parameter to all execute messages and using the above approach, any arbitrary gas usage can be targeted. The recommended approach for token contracts (SNIP-20s) is to add this optional parameter to all message types, so that wallets can set the target automatically.
-
-Note, that there will be a small amount of wasm execution that occurs after the call to the `gas_evaporate` API function, therefore the exact amount of gas used can sometimes be off by 1 gas from the target using this strategy. Wallets can adjust the `gas_target` accordingly after testing. Alternatively, if the contract developer wishes, the gas_used can be fuzzied by adjusted it with a random number each time.
-
-### Requests
-
+### Request
 
 | Name       | Type            | Description                                                                                                | optional |
 |------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
@@ -72,6 +40,8 @@ Note, that there will be a small amount of wasm execution that occurs after the 
 
 
 #### Example
+
+The following example execution message shows the user requesting to target 40,000 GAS. Even if the contract only uses 32,000 to complete the transfer, it will _evaporate_ the remainder:
 
 ```json
 {
@@ -84,10 +54,118 @@ Note, that there will be a small amount of wasm execution that occurs after the 
 }
 ```
 
+
+### Response
+
+_Response format is not specified._
+
+
+# Implementation Guide
+
+The following section is provided for developers' reference.
+
+## API functions
+
+Secret Network supports two API functions available to contracts to make evaporation work.
+
+
+#### `check_gas()`
+
+This API function returns the current amount of CosmWasm gas used as a `u64` and is called in a contract with `deps.api.check_gas()?` .
+
+
+#### `gas_evaporate(amount: u32)`
+
+This API function consumes a fixed amount of CosmWasm gas and is called in a contract with `deps.api.gas_evaporate(amount)?`, where `amount` is a `u32` value indicating the amount of gas to be used.
+
+
+## Reference Implementation
+
+The following snippets demonstrate how to add SNIP-50 to an example SNIP-2x contract:
+
+In `src/msg.rs`:
+```rust
+
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum ExecuteMsg {
+  Deposit {
+    entropy: Option<Binary>,
+    padding: Option<String>,
+    /**/ gas_target: Option<u32>, /***/
+  },
+  Redeem {
+    amount: Uint128,
+    denom: Option<String>,
+    entropy: Option<Binary>,
+    padding: Option<String>,
+    /**/ gas_target: Option<u32>, /***/
+  },
+  /* ... */
+}
+
+pub trait Evaporatable {
+  fn get_gas_target(self) -> Option<u32>;
+}
+
+fn get_gas_target(self) -> Option<u32> {
+  match self {
+    ExecuteMsg::Deposit { gas_target, .. }
+    | ExecuteMsg::Redeem { gas_target, .. }
+    | ExecuteMsg::Transfer { gas_target, .. }
+    | ExecuteMsg::Send { gas_target, .. }
+    /* ... */
+    | ExecuteMsg::BurnFrom { gas_target, .. } => gas_target,
+    _ => None,
+  }
+}
+```
+
+
+In `src/contract.rs`:
+```rust
+#[entry_point]
+pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
+  /* ... */
+
+  let response = match msg.clone() {
+    ExecuteMsg::Deposit { .. } => { /* */ }
+    ExecuteMsg::Redeem { .. } => { /* */ }
+    ExecuteMsg::Transfer { .. } => { /* */ }
+    /* ... */
+  }
+
+  /* then, at the very end... */
+
+  // get the target gas value
+  let gas_target = match msg.clone().get_gas_target() {
+    None => 0u32,
+    Some(t) => t,
+  }
+
+  // check how much gas has been consumed so far
+  let gas_used: u64 = deps.api.check_gas()?;
+
+  // calculate amount of gas to evaporate
+  let to_evaporate = gas_target - gas_used as u32;
+
+  // evaporate specified amount
+  deps.api.gas_evaporate(to_evaporate)?;
+
+  // return the response
+  response
+}
+```
+
+Note, that there will be a small amount of wasm execution that occurs after the call to the `gas_evaporate` API function, therefore the exact amount of gas used can sometimes be off by 1 gas from the target using this strategy. Wallets can adjust the `gas_target` accordingly after testing. Alternatively, if the contract developer wishes, the final `gas_used` can be fuzzied by adjusting it with a small random offset each time.
+
+
 ### Callback functions
 
 The above approach works well for contract executions that do not send submessages. However, when using the receiver interface for SNIP-20 `send` messages and similar callbacks, developers might need to send additional gas target information through the `msg` parameter depending on the use case.
 
+
 ### Hard-coded gas target
 
-Alternatively, if the gas used by a contract's function calls is deterministic, a contract developer can hard-code specific gas targets for execute messages. This approach is less flexible, however, and developers should make sure to add functionality to adjust the target values in case gas metering changes with a chain upgrade.
+Alternatively, if the gas used by a contract's function calls is deterministic, a contract developer can hard-code specific minimum gas targets for execute messages. This approach is less flexible, however, and developers should make sure to add functionality to adjust the target values in case gas metering changes with a chain upgrade.
+
