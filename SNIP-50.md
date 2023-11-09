@@ -59,6 +59,8 @@ The following example execution message shows the user requesting to target 40,0
 
 _Response format is not specified._
 
+### 
+
 
 # Implementation Guide
 
@@ -66,7 +68,7 @@ The following section is provided for developers' reference.
 
 ## API functions
 
-Secret Network supports two API functions available to contracts to make evaporation work.
+Secret Network make two API functions available to contracts that allows for evaporation.
 
 
 #### `check_gas()`
@@ -108,15 +110,17 @@ pub trait Evaporatable {
   fn get_gas_target(self) -> Option<u32>;
 }
 
-fn get_gas_target(self) -> Option<u32> {
-  match self {
-    ExecuteMsg::Deposit { gas_target, .. }
-    | ExecuteMsg::Redeem { gas_target, .. }
-    | ExecuteMsg::Transfer { gas_target, .. }
-    | ExecuteMsg::Send { gas_target, .. }
-    /* ... */
-    | ExecuteMsg::BurnFrom { gas_target, .. } => gas_target,
-    _ => None,
+impl Evaporatable for ExecuteMsg {
+  fn get_gas_target(self) -> Option<u32> {
+    match self {
+      ExecuteMsg::Deposit { gas_target, .. }
+      | ExecuteMsg::Redeem { gas_target, .. }
+      | ExecuteMsg::Transfer { gas_target, .. }
+      | ExecuteMsg::Send { gas_target, .. }
+      /* ... */
+      | ExecuteMsg::BurnFrom { gas_target, .. } => gas_target,
+      _ => None,
+    }
   }
 }
 ```
@@ -135,7 +139,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
     /* ... */
   }
 
-  /* then, at the very end... */
+  /* then, at the very end of the `execute` function... */
 
   // get the target gas value
   let gas_target = match msg.clone().get_gas_target() {
@@ -146,18 +150,25 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
   // check how much gas has been consumed so far
   let gas_used: u64 = deps.api.check_gas()?;
 
-  // calculate amount of gas to evaporate
-  let to_evaporate = gas_target - gas_used as u32;
+  // some remainder is available
+  if (gas_target as u64) > gas_used {
+    // calculate amount of gas to evaporate
+    let to_evaporate = gas_target - gas_used as u32;
 
-  // evaporate specified amount
-  deps.api.gas_evaporate(to_evaporate)?;
+    // evaporate specified amount
+    deps.api.gas_evaporate(to_evaporate)?;
+  }
 
   // return the response
   response
 }
 ```
 
-Note, that there will be a small amount of wasm execution that occurs after the call to the `gas_evaporate` API function, therefore the exact amount of gas used can sometimes be off by 1 gas from the target using this strategy. Wallets can adjust the `gas_target` accordingly after testing. Alternatively, if the contract developer wishes, the final `gas_used` can be fuzzied by adjusting it with a small random offset each time.
+### Evaporation Accuracy
+
+Note, that there will be a small amount of wasm execution that occurs after the call to the `gas_evaporate` API function, therefore the exact amount of gas used can sometimes be off by 1 gas from the target.
+
+Wallets can adjust the `gas_target` accordingly after testing. Alternatively, if the contract developer wishes, the final `gas_used` can be fuzzied by adjusting it with a small random offset each time.
 
 
 ### Callback functions
