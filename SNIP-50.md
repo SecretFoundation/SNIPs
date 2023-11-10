@@ -41,7 +41,7 @@ SNIP-50 compliant contracts MUST support the option for users to include a `gas_
 
 | Name       | Type            | Description                                                                                                | optional |
 |------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
-| gas_target | number          | The intended amount of gas to use for the execution.                                                       |  yes     |
+| gas_target | string (uint64) | The intended amount of gas to use for the execution.                                                       |  yes     |
 
 
 #### Example
@@ -54,7 +54,7 @@ The following example execution message shows the user requesting to target 40,0
     "recipient": "<address>",
     "amount": "100",
     "padding": "-------",
-    "gas_target": 40000,
+    "gas_target": "40000",
   },
 }
 ```
@@ -99,24 +99,24 @@ pub enum ExecuteMsg {
   Deposit {
     entropy: Option<Binary>,
     padding: Option<String>,
-    /**/ gas_target: Option<u32>, /***/
+    /**/ gas_target: Option<u64>, /***/
   },
   Redeem {
     amount: Uint128,
     denom: Option<String>,
     entropy: Option<Binary>,
     padding: Option<String>,
-    /**/ gas_target: Option<u32>, /***/
+    /**/ gas_target: Option<u64>, /***/
   },
   /* ... */
 }
 
 pub trait Evaporatable {
-  fn get_gas_target(self) -> Option<u32>;
+  fn get_gas_target(self) -> Option<u64>;
 }
 
 impl Evaporatable for ExecuteMsg {
-  fn get_gas_target(self) -> Option<u32> {
+  fn get_gas_target(self) -> Option<u64> {
     match self {
       ExecuteMsg::Deposit { gas_target, .. }
       | ExecuteMsg::Redeem { gas_target, .. }
@@ -147,8 +147,8 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
   /* then, at the very end of the `execute` function... */
 
   // get the target gas value
-  let gas_target = match msg.clone().get_gas_target() {
-    None => 0u32,
+  let gas_target: u64 = match msg.clone().get_gas_target() {
+    None => 0u64,
     Some(t) => t,
   }
 
@@ -156,9 +156,9 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
   let gas_used: u64 = deps.api.check_gas()?;
 
   // some remainder is available
-  if (gas_target as u64) > gas_used {
+  if gas_target > gas_used {
     // calculate amount of gas to evaporate
-    let to_evaporate = gas_target - gas_used as u32;
+    let to_evaporate = (gas_target - gas_used) as u32;
 
     // evaporate specified amount
     deps.api.gas_evaporate(to_evaporate)?;
