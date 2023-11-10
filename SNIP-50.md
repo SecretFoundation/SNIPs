@@ -99,20 +99,20 @@ pub enum ExecuteMsg {
   Deposit {
     entropy: Option<Binary>,
     padding: Option<String>,
-    /**/ gas_target: Option<u64>, /***/
+    /**/ gas_target: Option<Uint64>, /***/
   },
   Redeem {
     amount: Uint128,
     denom: Option<String>,
     entropy: Option<Binary>,
     padding: Option<String>,
-    /**/ gas_target: Option<u64>, /***/
+    /**/ gas_target: Option<Uint64>, /***/
   },
   /* ... */
 }
 
 pub trait Evaporatable {
-  fn get_gas_target(self) -> Option<u64>;
+  fn get_gas_target(self) -> Option<Uint64>;
 }
 
 impl Evaporatable for ExecuteMsg {
@@ -123,7 +123,7 @@ impl Evaporatable for ExecuteMsg {
       | ExecuteMsg::Transfer { gas_target, .. }
       | ExecuteMsg::Send { gas_target, .. }
       /* ... */
-      | ExecuteMsg::BurnFrom { gas_target, .. } => gas_target,
+      | ExecuteMsg::BurnFrom { gas_target, .. } => gas_target.u64(),
       _ => None,
     }
   }
