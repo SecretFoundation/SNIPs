@@ -142,22 +142,22 @@ pub enum ExecuteMsg {
 }
 
 pub trait Evaporatable {
-  fn get_gas_target(self) -> Option<u64>;
+  fn get_gas_target(self) -> u64;
 }
 
 impl Evaporatable for ExecuteMsg {
-  fn get_gas_target(self) -> Option<u64> {
+  fn get_gas_target(self) -> u64 {
     match self {
       // gas_target is mandatory in Evaporate
-      ExecuteMsg::Evaporate { gas_target } => Some(gas_target.u64()),
+      ExecuteMsg::Evaporate { gas_target } => gas_target.u64(),
       // gas_target is optional for all others
       ExecuteMsg::Deposit { gas_target, .. }
       | ExecuteMsg::Redeem { gas_target, .. }
       | ExecuteMsg::Transfer { gas_target, .. }
       | ExecuteMsg::Send { gas_target, .. }
       /* ... */
-      | ExecuteMsg::BurnFrom { gas_target, .. } => gas_target.map(|value| value.u64()),
-      _ => None,
+      | ExecuteMsg::BurnFrom { gas_target, .. } => gas_target.map(|value| value.u64()).unwrap_or(u64),
+      _ => 064,
     }
   }
 }
@@ -181,7 +181,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
   /* then, at the very end of the `execute` function... */
 
   // get the target gas value
-  let gas_target: u64 = match msg.clone().get_gas_target().unwrap_or(0u64);
+  let gas_target: u64 = match msg.clone().get_gas_target();
 
   // check how much gas has been consumed so far
   let gas_used: u64 = deps.api.check_gas()?;
