@@ -1,17 +1,17 @@
 ---
 snip: 50
-title: "Evaporation: Wasm Execution Gas Privacy"
+title: "Evaporation: Privacy for Wasm Execution Gas"
 status: Draft
-type: Informational
+type: Specification
 author: "Blake Regalia (@blake-regalia), Ben Adams (@darwinzer0)"
 created: 2023-04-28
 ---
 
-# SNIP-50 - Evaporation: Wasm Execution Gas Privacy
+# SNIP-50 - Evaporation: Privacy for Wasm Execution Gas
 
-This document describes a specification for contracts to implement, as well as a set of best practices to use, in order to protect users' privacy when executing.
+This document describes a specification for contracts to implement, as well as a set of best practices to use, in order to prevent leaking execution information through the `gas_used` transaction metadata.
 
-**Evaporation** is a concept that was introduced to overcome privacy risks associated with the publicly viewable `gas_used` field in transaction results' metadata. Evaporation refers to the practice of deliberately consuming extra gas during execution in order to pad the `gas_used` amount before it leaves the enclave.
+**Evaporation** is a concept that was introduced to overcome privacy risks associated with the publicly viewable `gas_used` field in transaction results' metadata. Evaporation refers to the practice of deliberately consuming extra gas during execution in order to pad the metered `gas_used` amount before it leaves the enclave.
 
 With evaporation, clients can now instruct contracts on exactly how much gas their execution should consume, yielding a consistent `gas_used` across all methods. Evaporation is similar to the `padding` field in this regard; it allows clients to parameterize their message in order to mitigate data leaking through the publicly viewable execution metadata. Whereas `padding` is used to fill the length of encrypted messages, _evaporation_ is used to fill the `gas_used` field.
 
@@ -23,6 +23,11 @@ The public `gas_used` field of a contract execution result's metadata leaks info
 As a simple example, an attacker could use the `gas_used` information to distinguish between the following SNIP-2x execution methods with high confidence: `create_viewing_key`, `set_viewing_key`, `increase_allowance`/`decrease_allowance`, `send`/`transfer`, `revoke_permit`, and so on.
 
 In some cases, an attacker could narrow or even deduce the range of possible values that certain arguments or storage items held during execution.
+
+
+## Which contracts should implement SNIP-50?
+
+**All contracts** should implement SNIP-50 in order to protect user privacy on Secret Network.
 
 
 # Specification
