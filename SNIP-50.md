@@ -181,10 +181,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
   /* then, at the very end of the `execute` function... */
 
   // get the target gas value
-  let gas_target: u64 = match msg.clone().get_gas_target() {
-    None => 0u64,
-    Some(t) => t,
-  }
+  let gas_target: u64 = match msg.clone().get_gas_target().unwrap_or(0u64);
 
   // check how much gas has been consumed so far
   let gas_used: u64 = deps.api.check_gas()?;
