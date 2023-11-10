@@ -123,7 +123,7 @@ impl Evaporatable for ExecuteMsg {
       | ExecuteMsg::Transfer { gas_target, .. }
       | ExecuteMsg::Send { gas_target, .. }
       /* ... */
-      | ExecuteMsg::BurnFrom { gas_target, .. } => gas_target.u64(),
+      | ExecuteMsg::BurnFrom { gas_target, .. } => gas_target.map(|value| value.u64()),
       _ => None,
     }
   }
