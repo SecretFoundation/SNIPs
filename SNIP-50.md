@@ -32,12 +32,9 @@ In some cases, an attacker could narrow or even deduce the range of possible val
 
 # Specification
 
-## Evaporation via `gas_target`
+## Gas Target
 
 SNIP-50 compliant contracts MUST support the option for users to include a `gas_target` field in every message. The value of the field is a `Uint64` that specifies the target quantity of CosmWasm gas for the contract to reach by the end of its execution.
-
-
-### Request
 
 | Name       | Type            | Description                                                                                                | optional |
 |------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
@@ -54,17 +51,46 @@ The following example execution message shows the user requesting to target 40,0
     "recipient": "<address>",
     "amount": "100",
     "padding": "-------",
-    "gas_target": "40000",
-  },
+    "gas_target": "40000"
+  }
+}
+```
+
+
+## Evaporate
+
+Contracts SHOULD also implement a no-op message that does nothing but evaporate up to the desired amount.
+
+### Request
+
+| Name       | Type            | Description                                                                                                | optional |
+|------------|-----------------|------------------------------------------------------------------------------------------------------------|----------|
+| gas_target | string (uint64) | The intended amount of gas to use for the execution.                                                       |  no      |
+
+
+#### Example
+
+The following example execution message shows the user requesting to target 60,000 GAS.
+
+```json
+{
+  "evaporate": {
+    "gas_target": "60000"
+  }
 }
 ```
 
 
 ### Response
 
-_Response format is not specified._
+```json
+{
+  "evaporate": {
+    "status": "success"
+  }
+}
+```
 
-### 
 
 
 # Implementation Guide
@@ -96,6 +122,10 @@ In `src/msg.rs`:
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
+  Evaporate {
+    gas_target: Uint64,
+  },
+  // below are examples of ammending existing message types
   Deposit {
     entropy: Option<Binary>,
     padding: Option<String>,
@@ -118,6 +148,9 @@ pub trait Evaporatable {
 impl Evaporatable for ExecuteMsg {
   fn get_gas_target(self) -> Option<u64> {
     match self {
+      // gas_target is mandatory in Evaporate
+      ExecuteMsg::Evaporate { gas_target } => gas_target.u64(),
+      // gas_target is optional for all others
       ExecuteMsg::Deposit { gas_target, .. }
       | ExecuteMsg::Redeem { gas_target, .. }
       | ExecuteMsg::Transfer { gas_target, .. }
@@ -138,6 +171,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
   /* ... */
 
   let response = match msg.clone() {
+    ExecuteMsg::Evaporate { .. } => { /* */ }
     ExecuteMsg::Deposit { .. } => { /* */ }
     ExecuteMsg::Redeem { .. } => { /* */ }
     ExecuteMsg::Transfer { .. } => { /* */ }
