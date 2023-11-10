@@ -125,7 +125,7 @@ pub enum ExecuteMsg {
   Evaporate {
     gas_target: Uint64,
   },
-  // below are examples of ammending existing message types
+  // below are examples of amending existing message types
   Deposit {
     entropy: Option<Binary>,
     padding: Option<String>,
@@ -149,7 +149,7 @@ impl Evaporatable for ExecuteMsg {
   fn get_gas_target(self) -> Option<u64> {
     match self {
       // gas_target is mandatory in Evaporate
-      ExecuteMsg::Evaporate { gas_target } => gas_target.u64(),
+      ExecuteMsg::Evaporate { gas_target } => Some(gas_target.u64()),
       // gas_target is optional for all others
       ExecuteMsg::Deposit { gas_target, .. }
       | ExecuteMsg::Redeem { gas_target, .. }
