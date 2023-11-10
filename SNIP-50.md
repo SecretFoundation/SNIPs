@@ -34,7 +34,7 @@ In some cases, an attacker could narrow or even deduce the range of possible val
 
 ## Evaporation via `gas_target`
 
-SNIP-50 compliant contracts MUST support the option for users to include a `gas_target` field in every message. The value of the field is a `u32` that specifies the target quantity of CosmWasm gas for the contract to reach by the end of its execution.
+SNIP-50 compliant contracts MUST support the option for users to include a `gas_target` field in every message. The value of the field is a `u64` that specifies the target quantity of CosmWasm gas for the contract to reach by the end of its execution.
 
 
 ### Request
