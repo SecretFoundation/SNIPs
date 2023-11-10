@@ -112,7 +112,7 @@ pub enum ExecuteMsg {
 }
 
 pub trait Evaporatable {
-  fn get_gas_target(self) -> Option<Uint64>;
+  fn get_gas_target(self) -> Option<u64>;
 }
 
 impl Evaporatable for ExecuteMsg {
