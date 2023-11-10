@@ -1,9 +1,9 @@
 ---
 snip: 50
-title: Evaporation: Wasm Execution Gas Privacy
+title: "Evaporation: Wasm Execution Gas Privacy"
 status: Draft
 type: Informational
-author: Blake Regalia (@blake-regalia), Ben Adams (@darwinzer0)
+author: "Blake Regalia (@blake-regalia), Ben Adams (@darwinzer0)"
 created: 2023-04-28
 ---
 
