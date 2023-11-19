@@ -156,8 +156,8 @@ impl Evaporatable for ExecuteMsg {
       | ExecuteMsg::Transfer { gas_target, .. }
       | ExecuteMsg::Send { gas_target, .. }
       /* ... */
-      | ExecuteMsg::BurnFrom { gas_target, .. } => gas_target.map(|value| value.u64()).unwrap_or(u64),
-      _ => 064,
+      | ExecuteMsg::BurnFrom { gas_target, .. } => gas_target.map(|value| value.u64()).unwrap_or(0u64),
+      _ => 0u64,
     }
   }
 }
@@ -181,7 +181,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
   /* then, at the very end of the `execute` function... */
 
   // get the target gas value
-  let gas_target: u64 = match msg.clone().get_gas_target();
+  let gas_target: u64 = msg.get_gas_target();
 
   // check how much gas has been consumed so far
   let gas_used: u64 = deps.api.check_gas()?;
