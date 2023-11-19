@@ -99,7 +99,7 @@ The following section is provided for developers' reference.
 
 ## API functions
 
-Secret Network make two API functions available to contracts that allows for evaporation.
+Secret Network exposes two API functions to contracts that make evaporation possible.
 
 
 #### `check_gas()`
@@ -216,3 +216,11 @@ The above approach works well for contract executions that do not send submessag
 
 Alternatively, if the gas used by a contract's function calls is deterministic, a contract developer can hard-code specific minimum gas targets for execute messages. This approach is less flexible, however, and developers should make sure to add functionality to adjust the target values in case gas metering changes with a chain upgrade.
 
+
+### Gas Tracking and Opportunistic Execution
+
+Gas tracking can be used as a development aid to inspect the amount of gas used by certain blocks of code.
+
+Opportunistic execution is a technique that allows contracts to take advantage of excess gas that would otherwise be evaporated.
+
+For more details about these concepts, see the [docs.scrt.network article here](https://docs.scrt.network/secret-network-documentation/development/development-concepts/privacy-design/gas-evaporation-and-tracking#gas-tracking).
