@@ -405,9 +405,10 @@ const { signature } = await window.keplr.signAmino(
   }
 );
 
-const { balance } = await secretjs.queryContractSmart(
-  "secret18vd8fpwxzck93qlwghaj6arh4p7c5n8978vsyg",
-  {
+const { balance } = await secretjs.query.compute.queryContract({
+  contract_address: contract.address,
+  code_hash: contract.codeHash,
+  query: {
     with_permit: {
       query: { balance: {} },
       permit: {
@@ -420,8 +421,8 @@ const { balance } = await secretjs.queryContractSmart(
         signature: signature,
       },
     },
-  }
-);
+  },
+});
 
 console.log(balance.amount);
 ```
