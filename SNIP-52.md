@@ -201,11 +201,11 @@ Bloom Mode allows contracts to deliver notifications to multiple users at once, 
 
 Unlike single recipient channels, the attribute key for Bloom mode chanels is constant _across events_. For example, a channel with the ID `group_message` will always output to the attribute key `"wasm.snip52:#group_message"`.
 
-The attribute value is then made up of two major parts, the bloom filter bytes followed by the notification data bytes: `${BLOOM_FILTER}${NOTIFICATION_DATA}`. Both parts are constant length, and the notification data is optional (i.e., it may have length 0). If you _would_ like to deliver notification data to each of the recipients while maintaining privacy, see [more here](#attaching-private-data).
+The attribute value is then made up of two major parts, the bloom filter bytes followed by the notification data bytes: `${BLOOM_FILTER}${NOTIFICATION_DATA}`. Both parts are constant length, and the notification data is optional (i.e., it may have length 0). If you _would_ like to deliver notification data to each of the recipients while maintaining privacy, see below in [Attaching private data](#attaching-private-data).
 
 ### Bloom filter
 
-The [bloom filter](https://en.wikipedia.org/wiki/Bloom_filter) is a data structure that allows for set membership to be encoded into a small space. Since false positive matches are possible (but ideally rare, depending on the parameters), it is only used by clients as a first step to determining whether a given notification affects them or not. In other words, if a client gets a hit on the bloom filter then they know to check the notification data and/or query the contract state to test whether they actually received a notification.
+The [bloom filter](https://en.wikipedia.org/wiki/Bloom_filter) is a data structure that allows for set membership to be encoded into a small space. Since false positive matches are possible (but ideally rare, depending on the parameters), it is only used by clients as a first step in determining whether a given notification affects them or not. In other words, if a client gets a hit on the bloom filter then they know to check the notification data and/or query the contract state to test whether they actually received a notification.
 
 Contract developers need to choose parameters _m_, _k_ and _h_ for each channel's bloom filter, where _m_ MUST be divisible by 8. Larger values of _m_ are needed for larger group sizes, but consume more space in the logs, whereas _k_ should be chosen to be optimal over the range of the expected number of recipients. Finally, _h_ is the hash function from which _k_ adjacent chunks, each of length $\log_{2}(m)$ bits, will be extracted.
 
@@ -540,6 +540,20 @@ Response:
         "counter": "<current counter value>",
         "next_id": "<the next Notification ID>"
       },
+      {
+        "channel": "<channel id, corresponds to query input>",
+        "mode": "bloom",
+        "seed": "<shared secret in base64>",
+        "parameters": {
+          "m": 512,
+          "k": 15,
+          "h": "sha256"
+        },
+        "data": {
+          "...": "<data schema>",
+        },
+        "answer_id": "<if txhash argument was given, this will be its computed Notification ID>"
+      }
       { "...": "..." }
     ]
   }
@@ -558,21 +572,23 @@ Response:
   type ChannelInfo = {
     channel: string;
     seed: string;  // base64
-    cddl?: string;  // cddl
   } & ({
     mode: "counter";
+    cddl?: string;  // cddl
     counter: string;  // uint64
     next_id: string;
   } | {
     mode: "txhash";
+    cddl?: string;  // cddl
     answer_id?: string;
   } | {
     mode: "bloom";
     parameters: {
       m: number;
       k: number;
+      h: string;
     };
-    data: CwAbiLikeDescriptor;
+    data: Descriptor;  // see "Attaching private data" section
     answer_id?: string;
   });
   ```
@@ -580,6 +596,8 @@ Response:
 
 
 If a channel is operating in Counter Mode, given by `"mode": "counter"`, then its response row includes the current counter value (under the `counter` key) and the next Notification ID (under the `next_id` key) corresponding to the given channel affecting the current viewer (who was specified in the query authentication data, depending on whether a query permit or ViewerInfo was used).
+
+If a channel is operating in TxHash Mode or Bloom Mode and the client provides a value for `txhash`, then its response SHOULD include an `answer_id` field containing its computed notification ID for the given tx hash.
 
 The response also provides the viewer's current seed for each given channel, allowing the client to derive future Notification IDs for this channel offline (i.e., without having to query the contract again).
 
