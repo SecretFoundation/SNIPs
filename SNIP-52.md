@@ -2,6 +2,11 @@
 
 Allows clients to receive notifications when certain events within a smart contract affect them. For example: token transfers, direct messaging, turn-based gaming, and so on.
 
+```
+Revision: #2
+Revised on: 2024-03-12
+```
+
 - [SNIP-52 - Private Push Notifications](#snip-52---private-push-notifications)
 - [Introduction](#introduction)
   - [Motivation](#motivation)
@@ -10,7 +15,11 @@ Allows clients to receive notifications when certain events within a smart contr
     - [Example flow](#example-flow)
     - [Diagram](#diagram)
     - [Remarks on the above example](#remarks-on-the-above-example)
-- [Modes: Counter Mode vs TxHash Mode](#modes-counter-mode-vs-txhash-mode)
+- [Channel Modes](#channel-modes)
+    - [Single Recipient: Counter Mode & TxHash Mode](#notifying-a-single-recipient-counter-mode--txhash-mode)
+    - [Multiple Recipients: Bloom Mode](#notifying-multiple-recipients-bloom-mode)
+      - [Bloom filter](#bloom-filter)
+      - [Arbitrary data](#attaching-private-data)
 - [Concepts](#concepts)
     - [Notification ID](#notification-id)
     - [Channels](#channels)
@@ -160,9 +169,16 @@ Let's walk through a simple example, where client Alice wants to be notified nex
 Once Alice has obtained her Notification Seed for the desired channel, she no longer needs to query the contract and steps 4-6 can repeat ad infinitum.
 
 
-# Modes: Counter Mode vs TxHash Mode
+# Channel Modes
 
-Each channel can operate in one of two modes: Counter Mode, or TxHash Mode. A channel's mode should either be hardcoded or set during contract initialization. It should never change.
+Each channel can operate in one of several modes: Counter Mode, TxHash Mode, or Bloom Mode. A channel's mode should either be hardcoded or set during contract initialization. It should never change.
+
+> NOTE: Additional channel modes are reserved for future revisions. Implementations should not assume that only the given modes exist. Therefore, implementations should NOT use a _default_ case or _else_ branch to select the remaining condition.
+
+
+## Single recipient: Counter Mode & TxHash Mode
+
+Counter Mode and TxHash Mode are for channels that deliver each notification to a single recipient, for example, a direct token transfer, direct messaging, or a two-player game.
 
 There is a trade-off between these two modes. Counter Mode is easier on clients but less secure.
 
@@ -170,7 +186,7 @@ In Counter Mode:
  - ✅ clients only have to recompute a channel's notification ID each time they receive a notification from that channel
  - ✅ clients are able to use node APIs such as `tx_search` to search back through history and find a missed notification
  - ✅ clients are able to query the contract to obtain their next notification ID, allowing them to bypass much of the SNIP-52 client-side implementation
- - ❌ an attacker could, in theory, de-anonymize notification IDs using a sophisticated [side-chain attack](https://docs.scrt.network/secret-network-documentation/overview-ecosystem-and-technology/techstack/privacy-technology/theoretical-attacks/contract-level/replay-side-chain)
+ - ❌ an attacker could, in theory, de-anonymize notification IDs using a sophisticated [side-chain attack](#hypothetical-attack-in-counter-mode)
 
 In TxHash Mode:
  - ✅ notifications are immune to side-chain attacks
@@ -179,15 +195,164 @@ In TxHash Mode:
 In summary, TxHash Mode is more secure than Counter Mode, but comes at the cost of more work for the client (although the processing heft is likely neglible). On the other hand, with Counter Mode, clients are able to easily search tx history for missed notifications, and clients can bypass computing Notification IDs altogether by querying the contract.
 
 
+## Multiple recipients: Bloom Mode
+
+Bloom Mode allows contracts to deliver notifications to multiple users at once, for example, batch transfers, group messaging, or in a multi-player game.
+
+Unlike single recipient channels, the attribute key for Bloom mode chanels is constant _across events_. For example, a channel with the ID `group_message` will always output to the attribute key `"wasm.snip52:#group_message"`.
+
+The attribute value is then made up of two major parts, the bloom filter bytes followed by the notification data bytes: `${BLOOM_FILTER}${NOTIFICATION_DATA}`. Both parts are constant length, and the notification data is optional (i.e., it may have length 0). If you _would_ like to deliver notification data to each of the recipients while maintaining privacy, see [more here](#attaching-private-data).
+
+### Bloom filter
+
+The [bloom filter](https://en.wikipedia.org/wiki/Bloom_filter) is a data structure that allows for set membership to be encoded into a small space. Since false positive matches are possible (but ideally rare, depending on the parameters), it is only used by clients as a first step to determining whether a given notification affects them or not. In other words, if a client gets a hit on the bloom filter then they know to check the notification data and/or query the contract state to test whether they actually received a notification.
+
+Contract developers need to choose parameters _m_, _k_ and _h_ for each channel's bloom filter, where _m_ MUST be divisible by 8. Larger values of _m_ are needed for larger group sizes, but consume more space in the logs, whereas _k_ should be chosen to be optimal over the range of the expected number of recipients. Finally, _h_ is the hash function from which _k_ adjacent chunks, each of length $\log_{2}(m)$ bits, will be extracted.
+
+This tool can assist with picking _m_ and _k_ parameters depending on the use case: https://hur.st/bloomfilter/?n=16&p=&m=512&k=15 . 
+
+Choosing hash function _h_ should be (a) cryptographically secure to prevent preimage attacks from revealing recipients' notification IDs, (b) uniformly random to ensure that the bloom filter is effective for all potential clients listening to the notification feed, and (c) produce at least $k * \log_{2}(m)$ bits.
+
+The bloom filter MUST be set by extracting _k_ adjacent values, each $\log_{2}(m)$ bits in size, from the hash digest starting at the leftmost bit. Each value MUST be read as an unsigned int in big-endian, which is then used to set the _n_-th bit in the bloom filter, where index 0 corresponds to the rightmost bit.
+
+For example, assuming a filter using params _m_ = 512 and _k_ = 15, we can select the cryptographic hash function _h_ = sha256, since $k * \log_{2}(m) = 15 * \log_{2}(512) = 15 * 9 = 135 \leq 256$. The 15 hash values `[k_0..k_14]` would be derived as follows:
+```
+let bloomFilter := bytes(64)
+
+for recipientAddr in recipients:
+   let notificationId := notificationIDFor(recipientAddr, channelId, {txHash})
+   let bloomHash := sha256(notificationId)
+
+   for i in 0..15:
+      let k_i := sliceBits(bloomHash, i*9, (i+1)*9)
+  
+      let toggle := uintToBytes(1 << bitsToUintBe(k_i))
+      bloomFilter := orBytes(bloomFilter, toggle)
+```
+
+### Attaching private data
+
+Contract developers are free to choose a data scheme to complement their bloom filter, however contracts SHOULD design and return a machine-readable representation of that schema in responses to the [ChannelInfo Query](#channelinfo-query).
+
+
+The format for the data scheme is made up of datatypes that resemble those from [EVM's textual ABI](https://docs.soliditylang.org/en/develop/abi-spec.html#types), namely `bool`, `uint<M>`, `address`, `bytes<M>`, and `<type>[M]`, with the additional custom types `struct`, and the special `packet[M]`.
+
+
+All `uint<M>` datatypes SHOULD be assumed to be clamped. If the client observes the max value for a `uint<M>`, then the contract ran out of bits and the client should query the contract for the actual value.
+
+The following typings formally describe it in TypeScript:
+```ts
+type Uint = `${bigint}`;  // 0, 1, 2, ...
+type UintSizes = '8' | '16' | '24' | '32' | '40' | '48' /* ... */ | '248' | '256';
+type List<Datatype> = `${Datatype}[${Uint}]`;
+
+type Primitive = `uint${UintSizes}` | 'address' | `bytes${Uint}`;
+
+type FlatDescriptor = {
+  type: Primitive | List<Primitive> | List<List<Primitive>>;
+  label: string;
+  description?: string;
+};
+
+type StructDescriptor = {
+  type: 'struct' | List<'struct'>;
+  members: Descriptor[];
+  label: string;
+  description?: string;
+};
+
+type DataDescriptor = FlatDescriptor | StructDescriptor;
+
+export type Descriptor = DataDescriptor | {
+  type: `packet[${Uint}]`;
+  version: number;
+  packetSize: number;
+  data: DataDescriptor;
+};
+```
+
+##### Example schema:
+
+```json
+{
+  "type": "packet[16]",
+  "version": "1",
+  "packetSize": 108,
+  "data": {
+    "type": "struct",
+    "members": [
+      {
+        "type": "uint64",
+        "label": "amount"
+      },
+      {
+        "type": "address",
+        "label": "sender"
+      },
+      {
+        "type": "bytes80",
+        "label": "memo",
+        "description": "UTF8-encoded memo string"
+      }
+    ]
+  }
+}
+```
+
+#### Packet datatype
+
+The `packet[M]` datatype is a special case that makes it convenient to encrypt different notification data for each recipient (i.e., only the intended recipient will be able to decrypt a packet's contents), up to a maximum of `M` recipients.
+
+Each packet must be fixed width so that clients can search for their packet at predictable offsets (also, a variable-width encoding scheme would leak data to other recipients) so CBOR encoding does not make sense here. This width is specified in bytes as the `packetSize`.
+
+The `version` specifies the revision of this datatype, and at the time of this writing should be set to `1`. Clients should assert that this version matches in their implementation.
+
+#### Packet specification version 1
+
+Each packet is composed of two major parts: `${PACKET_ID}${CIPHERTEXT}` .
+
+The packet ID is simply the 8 leftmost bytes of the notification ID for the intended recipient in the given channel.
+
+Clients that found a hit on the bloom filter will then scan the packets searching for a packet ID matching the 8 leftmost bytes of their notification ID. Each next packet ID will start at exactly `packetSize` bytes after the end of the previous one.
+
+The ciphertext is `packetSize` bytes long, the same length as its plaintext equivalent. When encrypting/decrypting packet data, the remaining 24 bytes of the notification ID are used as the key material, referred to here as the packet IKM. In other words, the packet IKM is the 24 bytes _immediately following_ the 8 leftmost bytes of the notification ID.
+
+Encrypting and decrypting packet data is performed using a one-time pad by XOR'ing the plaintext/ciphertext with the packet key. The packet key is derived using one of two techniques, depending on `packetSize`:
+ 1. If `packetSize` is less than or equal to 24 bytes, the packet key is simply the leftmost bytes of the packet IKM, up to `packetSize` bytes.
+ 2. If `packetSize` is greater than or equal to 25 bytes, then HKDF is performed on the 192-bit packet IKM with 256 bits of zero-valued salt, empty info and the SHA512 hash function, deriving exactly `packetSize * 8` bits. Those derived bits become the packet key.
+
+```
+let packetSize := length(packetPlaintext)
+let packetId := slice(notificationId, 0, 8)
+let packetIkm := slice(notificationId, 8, 32)
+let packetKey
+
+if packetSize <= 24:
+  packetKey := slice(packetIkm, 0, packetSize)
+else:
+  packetKey := hkdfSha512(ikm=packetIkm, salt=bytes(64), info="", length=packetSize*8)
+
+let packetCiphertext := xorBytes(packetPlaintext, packetKey)
+let packetBytes = concat(packetId, packetCiphertext)
+```
+
+
 # Concepts
+
+### Event Log Attributes
+
+Notifications work by adding attributes to the Tendermint Event log. Since these originate from the contract, they are always prefixed by `"wasm."`. Additionally, all SNIP-52 notifications MUST insert the `"snip52:"` attribute key prefix, which helps identify SNIP-52 events in downstream services and on the client.
+
+An event attribute can take on one of the following forms:
+ - `"wasm.snip52:${NOTIFICATION_ID}": "${ENCRYPTED_NOTIFICATION_DATA}"` for single-recipient notifications operating in [Counter Mode or TxHash Mode](#notifying-a-single-recipient-counter-mode--txhash-mode).
+ - `"wasm.snip52:#${CHANNEL_ID}": "${BLOOM_FILTER}${ARBITRARY_NOTIFICATION_DATA}"` for multi-recipient notifications operating in [Bloom Mode](#notifying-multiple-recipients-bloom-mode).
+
 
 ### Notification ID
 
 A globally unique, single-use identifier that is deterministically generated using a cryptographic hash function. Notification IDs can be generated by both contract and client.
 
-An event's Notification ID is used for the custom attribute's key in the transaction log, i.e., `"wasm.snip52:${NOTIFICATION_ID}": "${ENCRYPED_NOTIFICATION_DATA}"`.
-
-> Notice the use of the `snip52:` attribute key prefix. This helps identify SNIP-52 events worth caching for downstream services.
+An event's Notification ID is used for the custom attribute's key in the transaction log when the channel notifies a single recipient, i.e., `"wasm.snip52:${NOTIFICATION_ID}"`, and is used to compute bloom filter hashes when the channel notifies multiple recipients.
 
 
 ### Channels
@@ -322,9 +487,10 @@ Query:
 {
   "channel_info": {
     "channels": ["<id of channel>", "<...optional list of additional channel ids>"],
+    "txhash": "<optional 64 hex characters of a transaction hash>",
     "viewer": {
-      "address": "address_of_the_querier",
-      "viewing_key": "viewer's_key"
+      "address": "<address of the querier>",
+      "viewing_key": "<viewer's key>"
     }
   }
 }
@@ -336,6 +502,7 @@ Query:
   ```ts
   type ChannelInfoQueryMsg = {
     channels: string[];
+    txhash?: string;
     viewer: {
       address: string;  // bech32
       viewing_key: string;
@@ -347,11 +514,12 @@ Query:
 | Name     | Type                                 | Description                                       | Optional |
 |----------|--------------------------------------|---------------------------------------------------|----------|
 | channels | array of strings                     | A list of channel IDs                             | no       |
+| txhash   | string                               | A transaction hash to compute the Notification ID | yes      |
 | viewer   | [ViewerInfo](SNIP-721.md#viewerinfo) | The address and viewing key performing this query | no       |
 
 
 Response:
-> NOTE: The shape of each item in the `channels` array depends on its `mode` value (either `"txhash"` or `"counter"`). See below for more details.
+> NOTE: The shape of each item in the `channels` array depends on its `mode` value (either `"txhash"`, `"counter"` or `"bloom"`). See below for more details.
 ```json
 {
   "channel_info": {
@@ -359,17 +527,18 @@ Response:
     "channels": [
       {
         "channel": "<channel id, corresponds to query input>",
-        "seed": "<shared secret in base64>",
         "mode": "txhash",
-        "cddl": "<optional CDDL schema definition string for the CBOR-encoded notification data>"
+        "seed": "<shared secret in base64>",
+        "cddl": "<optional CDDL schema definition string for the CBOR-encoded notification data>",
+        "answer_id": "<if txhash argument was given, this will be its computed Notification ID>"
       },
       {
         "channel": "<channel id, corresponds to query input>",
-        "seed": "<shared secret in base64>",
         "mode": "counter",
+        "seed": "<shared secret in base64>",
+        "cddl": "<optional CDDL schema definition string for the CBOR-encoded notification data>",
         "counter": "<current counter value>",
-        "next_id": "<the next Notification ID>",
-        "cddl": "<optional CDDL schema definition string for the CBOR-encoded notification data>"
+        "next_id": "<the next Notification ID>"
       },
       { "...": "..." }
     ]
@@ -396,6 +565,15 @@ Response:
     next_id: string;
   } | {
     mode: "txhash";
+    answer_id?: string;
+  } | {
+    mode: "bloom";
+    parameters: {
+      m: number;
+      k: number;
+    };
+    data: CwAbiLikeDescriptor;
+    answer_id?: string;
   });
   ```
 </details>
@@ -608,7 +786,7 @@ fun initializeContract(msg, env) {
   let seed := env.random()
 
   // also very important: derive the contract's internal secret using HKDF
-  let internalSecret := hkdf(ikm=seed, salt=sha256(entropy), info="contract_internal_secret", length=32)
+  let internalSecret := hkdfSha256(ikm=seed, salt=sha256(entropy), info="contract_internal_secret", length=32)
 
   // save to storage
   saveInternalSecretToStorage(internalSecret);
@@ -630,7 +808,7 @@ fun getSeedFor(recipientAddr) {
 
   // no explicit shared secret; derive seed using contract's internal secret
   if NOT exists(seed):
-    seed := hkdf(ikm=contractInternalSecret, info=canonical(recipientAddr))
+    seed := hkdfSha256(ikm=contractInternalSecret, info=canonical(recipientAddr))
 
   return seed
 }
@@ -895,11 +1073,11 @@ Furthermore, it is advised to emit decoy notifications as if the channel was ope
 
 ### Hypothetical Attack in Counter Mode
 
-The following section describes a hypothetical side-chain attack for channels operating in Counter Mode. However, channels operating in TxHash Mode are completely immune to this type of attack and don't require any counter-measures. Contracts should still strive to emit a consistent number of events that appear as notifications in order to mask actual events with noise.
+The following section describes a hypothetical side-chain attack for channels operating in Counter Mode in which the attacker performs a [replay attack]((https://docs.scrt.network/secret-network-documentation/overview-ecosystem-and-technology/techstack/privacy-technology/theoretical-attacks/contract-level/replay-side-chain)). However, channels operating in TxHash Mode are completely immune to this type of attack and don't require any counter-measures. Contracts should still strive to emit a consistent number of events that appear as notifications in order to mask actual events with noise.
 
 If a contract action allows _any sender_ to trigger a notification for some recipient, then there is a risk that an attacker could perform a side-chain attack to precompute a victim's next Notification ID for a specific channel within a contract.
 
-For example, Mallory could fork the chain, transfer 10 token X to Alice, record the emitted Notification ID, and then wait to observe that same Notification ID on the actual chain. At that point, Mallory would be able to deduce that _someone_ transferred _some amount_ of token X to Alice.
+For example, Mallory has a balance of 0 IBC TKN on chain. She broadcasts a transaction with two messages: deposit 10 IBC TKN to the contract and then transfer 10 wrapped TKN to Alice. The execution fails since her IBC TKN balance is insufficient. Mallory then forks the chain, Cosmos Bank transfers 10 IBC TKN from another account, then replays the failed transaction on her side chain. This time, the deposit and subsequent wrapped TKN transfer succeeds since she has a sufficient balance. Mallory then records the emitted Notification ID (which belongs to Alice) and waits to observe that same Notification ID on the actual chain. At that point, Mallory would be able to deduce that _someone_ transferred _some amount_ of TKN to Alice.
 
 Notice that the threat model looks very different if the contract only allowed friends of Alice to transfer tokens to her account (i.e., no longer _any sender_). In that case, only a friend of Alice would be able to perform the attack.
 
