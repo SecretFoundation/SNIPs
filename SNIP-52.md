@@ -330,7 +330,7 @@ let packetKey
 if packetSize <= 24:
   packetKey := slice(packetIkm, 0, packetSize)
 else:
-  packetKey := hkdfSha512(ikm=packetIkm, salt=bytes(64), info="", length=packetSize*8)
+  packetKey := hkdfSha512(ikm=packetIkm, salt=bytes(64), info="", length=packetSize)
 
 let packetCiphertext := xorBytes(packetPlaintext, packetKey)
 let packetBytes = concat(packetId, packetCiphertext)
