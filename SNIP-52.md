@@ -280,6 +280,7 @@ export type Descriptor = DataDescriptor | {
   "packetSize": 108,
   "data": {
     "type": "struct",
+    "label": "transfer",
     "members": [
       {
         "type": "uint64",
