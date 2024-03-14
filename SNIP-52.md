@@ -101,11 +101,11 @@ Let's walk through a simple example, where client Alice wants to be notified nex
     {
       "channel_info": {
         "as_of_block": "1131420",
+        "seed": "ecc7f60418aa",
         "channels": [
           {
             "channel": "transfers",
             "mode": "counter",
-            "seed": "ecc7f60418aa",
             "counter": "3",
             "next_id": "ZjZjYzVhYjU4",
             "cddl": "transfers=[amount:biguint,sender:bstr]"
@@ -525,18 +525,17 @@ Response:
 {
   "channel_info": {
     "as_of_block": "<scopes validity of this response>",
+    "seed": "<shared secret in base64>",
     "channels": [
       {
         "channel": "<channel id, corresponds to query input>",
         "mode": "txhash",
-        "seed": "<shared secret in base64>",
         "cddl": "<optional CDDL schema definition string for the CBOR-encoded notification data>",
         "answer_id": "<if txhash argument was given, this will be its computed Notification ID>"
       },
       {
         "channel": "<channel id, corresponds to query input>",
         "mode": "counter",
-        "seed": "<shared secret in base64>",
         "cddl": "<optional CDDL schema definition string for the CBOR-encoded notification data>",
         "counter": "<current counter value>",
         "next_id": "<the next Notification ID>"
@@ -544,7 +543,6 @@ Response:
       {
         "channel": "<channel id, corresponds to query input>",
         "mode": "bloom",
-        "seed": "<shared secret in base64>",
         "parameters": {
           "m": 512,
           "k": 15,
@@ -891,7 +889,7 @@ fun notificationIDFor(contractOrRecipientAddr, channelId, env) {
     let counter := getCounterFor(contractOrRecipientAddr, channelId)
     salt := uintToDecimalString(counter)
 
-  // otherwise, channel is in TxHash Mode
+  // otherwise, channel is in TxHash Mode or Bloom Mode
   else:
     salt := env.txHash
 
@@ -909,7 +907,7 @@ fun notificationIDFor(contractOrRecipientAddr, channelId, env) {
 
 Contracts are encouraged to use [CBOR](https://cbor.io/) to encode/decode information in the notification data.
 
-Pseudocode for encrypting data into notifications (contract):
+Pseudocode for encrypting data into single-recipient notifications (contract):
 ```
 fun encryptNotificationData(recipientAddr, channelId, plaintext, env) {
   // ChaCha20 expects a 96-bit (12 bytes) nonce. we will combine two 12 byte buffers to create nonce
@@ -952,7 +950,7 @@ fun encryptNotificationData(recipientAddr, channelId, plaintext, env) {
 ```
 
 
-Pseudocode for decrypting data from notifications (client):
+Pseudocode for decrypting data from single-recipient notifications (client):
 ```
 fun decryptNotificationData(contractAddr, channelId, payload, env) {
   // depending on which mode the channel operates in
