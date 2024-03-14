@@ -355,9 +355,9 @@ for i in 0..packetsCapacity:
   setBytesAtOffset(bloomData, i*(packetSize+8), slice(decoyPacketIds, i*8, (i+1)*8))
 ```
 
-Finally, extra precaution should be taken if an action allows the same recipient to receive multiple notifications in a single channel, for example, Alice can use `batch_transfer` to send Bob multiple token transfers in a single execution. In such cases, implementors SHOULD omit those recipients' packets from the bloom data entirely, allowing the bloom filter to instruct those clients towards querying the contract for their actual notification. This is done to prevent the same packet ID from appearing multiple times in the bloom data (which would leak that those packets are not decoys and that some recipient received more than one notification). Since a client may not query the contract if they find their packet in the data, including the first of multiple packets for the same recipient would lead to the loss of information.
+Finally, extra precaution should be taken if an action allows the same recipient to receive multiple notifications in a single channel, for example, Alice can use `batch_transfer` to send Bob multiple token transfers in a single execution. In such cases, implementors SHOULD omit those recipients' packets from the bloom data entirely, allowing the bloom filter to instruct those clients towards querying the contract for their actual notification. This is done to prevent the same packet ID from appearing multiple times in the bloom data (which would leak that those packets are not decoys and that some recipient received more than one notification). Since a client will not need to query the contract if they find their packet in the data, embedding some but not all of a recipient's packets would lead to the loss of information.
 
-To put it concisely, if any recipient has more than one notification in an execution for a given channel, then _all_ of their packets for that event should be omitted from the data.
+To put it concisely, if any recipient has more than one notification in an execution for a given channel, then _all_ of their packets for that event SHOULD be omitted from the bloom data.
 
 
 # Concepts
