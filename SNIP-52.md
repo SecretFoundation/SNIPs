@@ -233,11 +233,9 @@ for recipientAddr in recipients:
 
 ### Attaching private data
 
-Contract developers are free to choose a data scheme to complement their bloom filter, however contracts SHOULD design and return a machine-readable representation of that schema in responses to the [ChannelInfo Query](#channelinfo-query).
+Contract developers are free to choose a data scheme to complement their bloom filter, however contracts SHOULD design and return a machine-readable representation of its schema in responses to the [ChannelInfo Query](#channelinfo-query).
 
-
-The format for the data scheme is made up of datatypes that resemble those from [EVM's textual ABI](https://docs.soliditylang.org/en/develop/abi-spec.html#types), namely `bool`, `uint<M>`, `address`, `bytes<M>`, and `<type>[M]`, with the additional custom types `struct`, and the special `packet[M]`.
-
+The format for expressing a schema is made up of datatypes that resemble those from [EVM's textual ABI](https://docs.soliditylang.org/en/develop/abi-spec.html#types), namely `bool`, `uint<M>`, `address`, `bytes<M>`, and `<type>[M]`, with the additional custom types `struct`, and the special `packet[M]`.
 
 All `uint<M>` datatypes SHOULD be assumed to be clamped. If the client observes the max value for a `uint<M>`, then the contract ran out of bits and the client should query the contract for the actual value.
 
