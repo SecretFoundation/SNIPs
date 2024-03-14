@@ -331,11 +331,32 @@ let packetKey
 if packetSize <= 24:
   packetKey := slice(packetIkm, 0, packetSize)
 else:
-  packetKey := hkdfSha512(ikm=packetIkm, salt=bytes(64), info="", length=packetSize)
+  packetKey := hkdf_sha512(ikm=packetIkm, salt=bytes(64), info="", length=packetSize)
 
 let packetCiphertext := xorBytes(packetPlaintext, packetKey)
 let packetBytes = concat(packetId, packetCiphertext)
 ```
+
+
+#### Capacity, decoys & privacy nuances for packets
+
+The packets structure has a finite capacity for notification data. If there are too many notifications and this capacity is reached, extra notifications are simply omitted. Any client that gets a hit on the bloom filter must know to query the contract to check for notification data. This approach of having the client query the contract also accounts for false positives caused by collisions in the bloom filter.
+
+Coversely, if there are fewer notifications than the structure's capacity, then the contract MUST fill the empty slots with decoy packets. For these decoys, packet IDs should be generated from secure random entropy (i.e., Secret VRF), and implementors should choose constant values for their packet data that would be "harmless" for a client to receive in the unlikely case that a collision were to occur.
+
+For example, to create decoys with packet data consisting of all zero-valued bytes, we can initialize the data bytestream with decoy packet IDs (before populating the actual notification data):
+```
+let bloomData := bytes(packetsCapacity*(packetSize+8))
+
+let decoyPacketIds := hkdf_sha512(ikm=env.random, salt=bytes(64), info=concat(channelId, ":decoys"), length=packetsCapacity*8)
+
+for i in 0..packetsCapacity:
+  setBytesAtOffset(bloomData, i*(packetSize+8), slice(decoyPacketIds, i*8, (i+1)*8))
+```
+
+Finally, extra precaution should be taken if an action allows the same recipient to receive multiple notifications in a single channel, for example, Alice can use `batch_transfer` to send Bob multiple token transfers in a single execution. In such cases, implementors SHOULD omit those recipients' packets from the bloom data entirely, allowing the bloom filter to instruct those clients towards querying the contract for their actual notification. This is done to prevent the same packet ID from appearing multiple times in the bloom data (which would leak that those packets are not decoys and that some recipient received more than one notification). Since a client may not query the contract if they find their packet in the data, including the first of multiple packets for the same recipient would lead to the loss of information.
+
+To put it concisely, if any recipient has more than one notification in an execution for a given channel, then _all_ of their packets for that event should be omitted from the data.
 
 
 # Concepts
@@ -803,7 +824,7 @@ fun initializeContract(msg, env) {
   let seed := env.random()
 
   // also very important: derive the contract's internal secret using HKDF
-  let internalSecret := hkdfSha256(ikm=seed, salt=sha256(entropy), info="contract_internal_secret", length=32)
+  let internalSecret := hkdf_sha256(ikm=seed, salt=sha256(entropy), info="contract_internal_secret", length=32)
 
   // save to storage
   saveInternalSecretToStorage(internalSecret);
@@ -825,7 +846,7 @@ fun getSeedFor(recipientAddr) {
 
   // no explicit shared secret; derive seed using contract's internal secret
   if NOT exists(seed):
-    seed := hkdfSha256(ikm=contractInternalSecret, info=canonical(recipientAddr))
+    seed := hkdf_sha256(ikm=contractInternalSecret, info=canonical(recipientAddr))
 
   return seed
 }
