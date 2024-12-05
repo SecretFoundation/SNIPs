@@ -221,7 +221,7 @@ For example, assuming a filter using params _m_ = 512 and _k_ = 15, we can selec
 let bloomFilter := bytes(64)
 
 for recipientAddr in recipients:
-   let notificationId := notificationIDFor(recipientAddr, channelId, {txHash})
+   let notificationId := notificationIdFor(recipientAddr, channelId, {txHash})
    let bloomHash := sha256(notificationId)
 
    for i in 0..15:
@@ -322,18 +322,22 @@ Encrypting and decrypting packet data is performed using a one-time pad by XOR'i
  2. If `packetSize` is greater than or equal to 25 bytes, then HKDF is performed on the 192-bit packet IKM with 256 bits of zero-valued salt, empty info and the SHA512 hash function, deriving exactly `packetSize * 8` bits. Those derived bits become the packet key.
 
 ```
-let packetSize := length(packetPlaintext)
-let packetId := slice(notificationId, 0, 8)
-let packetIkm := slice(notificationId, 8, 32)
-let packetKey
+fun encryptPacket(packetPlaintext, notificationId) {
+  let packetSize := length(packetPlaintext)
+  let packetId := slice(notificationId, 0, 8)
+  let packetIkm := slice(notificationId, 8, 32)
+  let packetKey
 
-if packetSize <= 24:
-  packetKey := slice(packetIkm, 0, packetSize)
-else:
-  packetKey := hkdf_sha512(ikm=packetIkm, salt=bytes(64), info="", length=packetSize)
+  if packetSize <= 24:
+    packetKey := slice(packetIkm, 0, packetSize)
+  else:
+    packetKey := hkdf_sha512(ikm=packetIkm, salt=bytes(64), info="", length=packetSize)
 
-let packetCiphertext := xorBytes(packetPlaintext, packetKey)
-let packetBytes = concat(packetId, packetCiphertext)
+  let packetCiphertext := xorBytes(packetPlaintext, packetKey)
+  let packetBytes = concat(packetId, packetCiphertext)
+
+  return packetBytes
+}
 ```
 
 
@@ -341,16 +345,20 @@ let packetBytes = concat(packetId, packetCiphertext)
 
 The packets structure has a finite capacity for notification data. If there are too many notifications and this capacity is reached, extra notifications are simply omitted. Any client that gets a hit on the bloom filter must know to query the contract to check for notification data. This approach of having the client query the contract also accounts for false positives caused by collisions in the bloom filter.
 
-Coversely, if there are fewer notifications than the structure's capacity, then the contract MUST fill the empty slots with decoy packets. For these decoys, packet IDs should be generated from secure random entropy (i.e., Secret VRF), and implementors should choose constant values for their packet data that would be "harmless" for a client to receive in the unlikely case that a collision were to occur.
+Coversely, if there are fewer notifications than the structure's capacity, then the contract MUST fill the empty slots with decoy packets. For these decoys, canonical addresses should be generated from secure random entropy (i.e., Secret VRF), and implementors should choose constant values for their packet data that would be "harmless" for a client to receive in the unlikely case that a collision were to occur.
 
-For example, to create decoys with packet data consisting of all zero-valued bytes, we can initialize the data bytestream with decoy packet IDs (before populating the actual notification data):
+For example, to create decoys with packet data consisting of all zero-valued bytes, we can initialize the data bytestream with decoys (before populating the actual notification data):
 ```
 let bloomData := bytes(packetsCapacity*(packetSize+8))
 
-let decoyPacketIds := hkdf_sha512(ikm=env.random, salt=bytes(64), info=concat(channelId, ":decoys"), length=packetsCapacity*8)
+let decoyAddresses := hkdf_sha512(ikm=env.random, salt=bytes(64), info=concat(channelId, ":decoys"), length=packetsCapacity*20)
 
 for i in 0..packetsCapacity:
-  setBytesAtOffset(bloomData, i*(packetSize+8), slice(decoyPacketIds, i*8, (i+1)*8))
+  let decoy := slice(decoyAddresses, i*20, (i+1)*20)
+  addAddressToBloomFilter(bloomFilter, decoy)
+  let notificationId = notificationIdFor(decoy, channelId, env)
+  let packetBytes := encryptPacket(decoyPacketPlaintext, notificationId)
+  setBytesAtOffset(bloomData, i*(packetSize+8), packetBytes)
 ```
 
 Finally, extra precaution should be taken if an action allows the same recipient to receive multiple notifications in a single channel, for example, Alice can use `batch_transfer` to send Bob multiple token transfers in a single execution. In such cases, implementors SHOULD omit those recipients' packets from the bloom data entirely, allowing the bloom filter to instruct those clients towards querying the contract for their actual notification. This is done to prevent the same packet ID from appearing multiple times in the bloom data (which would leak that those packets are not decoys and that some recipient received more than one notification). Since a client will not need to query the contract if they find their packet in the data, embedding some but not all of a recipient's packets would lead to the loss of information.
@@ -900,7 +908,7 @@ fun updateSeed(recipientAddr, signedDoc, env) {
 
 Pseudocode for generating Notification IDs (both contract & client):
 ```
-fun notificationIDFor(contractOrRecipientAddr, channelId, env) {
+fun notificationIdFor(contractOrRecipientAddr, channelId, env) {
   let salt := nil
 
   // depending on which mode the channel operates in
@@ -916,9 +924,9 @@ fun notificationIDFor(contractOrRecipientAddr, channelId, env) {
   // compute notification ID for this event
   let seed := getSeedFor(contractOrRecipientAddr)
   let material := concatStrings(channelId, ":", salt)
-  let notificationID := hmac_sha256(key=seed, message=utf8ToBytes(material))
+  let notificationId := hmac_sha256(key=seed, message=utf8ToBytes(material))
 
-  return notificationID
+  return notificationId
 }
 ```
 
@@ -1018,7 +1026,7 @@ Pseudocode for dispatching a notification (contract):
 ```
 fun dispatchNotification(recipientAddr, channelId, plaintext, env) {
   // obtain the current notification ID
-  let notificationId := notificationIDFor(recipientAddr, channelId)
+  let notificationId := notificationIdFor(recipientAddr, channelId)
 
   // construct the notification data payload
   let payload := encryptNotificationData(recipientAddr, channelId, plaintext, env);
